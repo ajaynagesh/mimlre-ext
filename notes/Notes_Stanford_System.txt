@@ -1,0 +1,209 @@
+relationFeatures: 
+--------------------------
+arg_words 
+arg_type 
+arg_order 
+full_tree_path 
+surface_distance_binary 
+surface_distance_bins 
+adjacent_words 
+entities_between_args 
+entity_counts_binary 
+entity_counts_bins 
+span_words_unigrams 
+dependency_path_lowlevel 
+dependency_path_words
+================================
+
+input knowledge base location :
+-----------------------------------
+kbp.inputkb = resources/kbp/TAC_2009_KBP_Evaluation_Reference_Knowledge_Base/data
+
+same as LDC_KBP_Corpora/LDC2009E58A.tgz + LDC_KBP_Corpora/LDC2009E58B.tgz + LDC_KBP_Corpora/LDC2009E58C.tgz  
+(TAC 2009 KBP Evaluation Reference Knowledge Base LDC2009E58)
+=========================================
+
+NER types 
+--------------
+kbp.ner.types = resources/kbp/sentence_extraction/NER_types 
+There are 42 NER types (count for per:siblings not present though)
+
+KBPDomReader.java
+----------------------------------------
+Dom reader for the KBP specification. Given a directory of documents containing Wikipedia infobox
+ * entries, parses each document to extract standard KBP relations and outputs them as a list of 
+ * RelationMentions.
+
+parse() function : Reads either a directory containing infobox files (*.xml) or a single file.  Returns a map between KBPEntity and the KBPSlots they're associated with.
+class KBPSlot{ ... } /* Data structure representing a relation mention  */ 
+class KBPEntity {..} /* Data structure representing an entity */
+=====================================
+
+
+* Map<String, Set<String>> slotsByEntityId -- constructed from reading the "kbp.inputkb". 
+slotsByEntityId = readSlotsByEntityId(props)
+
+
+class RelationDatum {...} --> Stores the set of datums for an entire relation, i.e., a tuple (entity, slot)
+* Collection<RelationDatum> datums = loadRelationDatums(trainDatumFiles, negFile, slotsByEntityId);
+
+
+from  static RelationDatum lineToDatum(String line)
+------
+entityId : {E0003635} 
+entType : ORG 
+neType : NUMBER 
+slotValue : 10 
+concatenatedLabel : _NR (unrelated)
+
+features :
+---  
+arg_words 
+arg_type  : arg1type=ENT:ORGANIZATION_and_arg2type=NUMBER
+arg_order : arg1BeforeArg2
+full_tree_path : NNP_<-_NP_<-_NP_->_PRN_->_NP_->_NP_->_CD
+surface_distance_binary : surface_distance_6
+surface_distance_bins : surface_distance_bin_lt10
+adjacent_words : rightarg0-The leftarg1--LRB- rightarg1-AS
+entities_between_args : entity_between_args:_ENT:ORGANIZATION 
+entity_counts_binary : entity_counts_ENT:ORGANIZATION:_2.0
+entity_counts_bins : 
+span_words_unigrams : span_word:The span_word:10th span_word:Airlift span_word:Squadron span_word:-LRB-
+dependency_path_lowlevel : _nn->_<-dep_
+dependency_path_words : word_in_dependency_path:Squadron
+------
+arg1type=ENT:ORGANIZATION_and_arg2type=NUMBER arg1BeforeArg2 NNP_<-_NP_<-_NP_->_PRN_->_NP_->_NP_->_CD surface_distance_6 surface_distance_bin_lt10 word_arg1:_10 rightarg0-The leftarg1--LRB- rightarg1-AS entity_between_args:_ENT:ORGANIZATION entity_counts_bin2 entity_counts_ENT:ORGANIZATION:_2.0 entity_counts_bin1 entity_counts_ORGANIZATION:_1.0 entity_counts_bin2 entity_counts_STATE_OR_PROVINCE:_2.0 entity_counts_bin1 entity_counts_NUMBER:_1.0 span_word:The span_word:10th span_word:Airlift span_word:Squadron span_word:-LRB- _nn->_<-dep_ word_in_dependency_path:Squadron
+--------------------------------------------------
+
+
+MultiLabelDataset<String, String> dataset --> datastructure for using Collection<RelationDatum> in training. ---> mainly contains arrays for efficient access of data
+
+
+--------
+
+* Mapping between infobox property names and std. relation types
+* The knowledge-base is read directy out of the xml files of 2009 TAC task knowledge-base
+* The features are some how encoded in the corpora/*.datums files (raw dataset from which the feautures are extracted is still not seen -- both code and data)
+* Labels from knowledge base and features from datums are populated in a dataset data-structure
+
+=================================
+----------------------------
+.datum files generation by sentencification of raw data
+-----
+KBPTrainer.java --> generateDatums()
+
+class KBPReader {...} contains -->private EntitySentenceExtractor sentenceExtractor [Fetches relevant sentences for a given entity from all our resources (i.e.,index, web cache)]
+KBPReader.parse() --> parses the files
+KBPReader.read() -->  //
+    // for each entity:
+    // - fetch sentences from the index
+    // - extract matches of the entity of interest
+    // - extract slot filler candidates
+    // - construct relation datums, both positive (using fillers that match
+    // known values) and negatives (all other fillers)
+    //
+
+KBPReader.readEntity() --> extracts sentences and builds the features
+
+===================================
+simple classifier routines for mintz dataset
+------------------
+initializeZClassifierLocally 
+initializeYClassifiersWithAtLeastOnce
+
+class LinearClassifier {....} -->
+------------------
+Implements a multiclass linear classifier. At classification time this
+ * can be any generalized linear model classifier (such as a perceptron,
+ * naive logistic regression, SVM).
+
+=================
+<entity wiki_title="Asha_Puthli" type="UKN" id="E0007544" name="Asha Puthli">
+<facts class="Infobox musical artist">
+<fact name="Name">Asha Puthli</fact>
+<fact name="Background">solo_singer</fact>
+<fact name="Origin"><link>Bombay</link>, <link entity_id="E0031352">India</link></fact>
+<fact name="Genre"><link>Jazz</link>, <link>soul</link>, <link entity_id="E0783192">funk</link>, <link entity_id="E0668346">pop</link>, <link entity_id="E0390417">ambient music</link>, <link entity_id="E0539140">electronica</link>, <link>Indian music</link></fact>
+<fact name="Years_active">1970—present</fact>
+<fact name="Label">CBS / Sony, Polygram, TK Records, Autobahn Records, Top of the World</fact>
+
+
+{E0007544} PER COUNTRY India per:countries_of_residence arg1type=ENT:PERSON_and_arg2type=COUNTRY NNP_<-_NP_<-_S_<-_VP_<-_NP_->_NP_->_NNP surface_distance_6 surface_distance_bin_lt10 word_arg1:_India leftarg0-diva rightarg0-, leftarg1-featuring rightarg1-- entity_between_args:_MODIFIER entity_counts_bin1 entity_counts_ORGANIZATION:_1.0 entity_counts_bin1 entity_counts_COUNTRY:_1.0 entity_counts_bin1 entity_counts_ENT:PERSON:_1.0 entity_counts_bin1 entity_counts_MODIFIER:_1.0 entity_counts_bin1 entity_counts_NUMBER:_1.0 span_word:- span_word:born span_word:jazz span_word:diva _dep->_partmod->_ word_in_dependency_path:bear
+
+----------------------------------------------------------------
+void loadRelationDatumsFromFile(File trainFile,
+      Map<String, Set<String>> slotsById,
+      boolean considerNegatives,
+      Map<String, RelationDatum> datums)
+
+
+=======================================
+-------
+FeatureFactory(relationFeatures)
+---------------------------
+FeatureFactory.java
+---
+ /**
+   * Creates all features for the datum corresponding to this relation mention
+   * Note: this assumes binary relations where both arguments are EntityMention
+   * @param features Stores all features
+   * @param rel The mention
+   * @param types Comma separated list of feature classes to use
+   */
+  private boolean addFeaturesRaw(Collection<String> features, RelationMention rel, List<String> types)
+
+
+
+===============================================================================================================
+
+Things to be ascertained from Stanford system
+-------
+
+1) Can we construct the features from the raw dataset ? 
+   Using the raw document collection of KBP task, construct the features file
+
+To build the index 
+----
+BuildLucene.java used to create the lucence index of the raw document collection
+
+java -cp classes/:lib/lucene-core-3.0.3.jar edu.stanford.nlp.kbp.slotfilling.index.BuildLucene tmp/index_dir/ tmp/raw_data/
+=======
+
+Using the index to create datum file : 
+------
+java -cp classes/:lib/commons-compress-1.3.jar:lib/commons-lang-2.5.jar:lib/fastutil.jar:lib/faust-gazetteer-1.0.3003.jar:lib/htmlparser.jar:lib/jgraph.jar:lib/jgrapht.jar:lib/joda-time.jar:lib/lucene-core-3.0.3.jar:lib/protobuf-java-2.3.0.jar:lib/ra.jar:lib/stanford-corenlp-2012-05-22-models.jar:lib/stanford-corenlp-2012-05-22.jar:lib/xom.jar edu.stanford.nlp.kbp.slotfilling.distantsupervision.TestKBPReader -props tmp/tmp.properties
+
+config
+---
+# new indices over NFS, using our own customized annotation caching
+index.kbp = /home/ajay/Research/Stanford_system/mimlre-2012-11-27/tmp/index_dir
+test.input = /home/ajay/Research/Stanford_system/mimlre-2012-11-27/tmp/input_kb
+
+
+=================================================
+
+2) How to incorporate our model in the system ? 
+
+
+
+=================================================================================================================================================================
+
+Features:
+---------
+
+FeatureFactory.java
+
+/**
+   * Creates all features for the datum corresponding to this relation mention
+   * Note: this assumes binary relations where both arguments are EntityMention
+   * @param features Stores all features
+   * @param rel The mention
+   * @param types Comma separated list of feature classes to use
+   */
+  private boolean addFeaturesRaw(Collection<String> features, RelationMention rel, List<String> types) {
+       ....
+       ....
+
+  }
+
+

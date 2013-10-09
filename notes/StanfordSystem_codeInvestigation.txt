@@ -1,0 +1,37 @@
+Things to be ascertained from Stanford system
+-------
+
+1) Can we construct the features from the raw dataset ? 
+   Using the raw document collection of KBP task, construct the features file
+
+To build the index 
+----
+BuildLucene.java used to create the lucence index of the raw document collection
+
+java -cp classes/:lib/lucene-core-3.0.3.jar edu.stanford.nlp.kbp.slotfilling.index.BuildLucene tmp/index_dir/ tmp/raw_data/
+=======
+
+Using the index to create datum file : 
+------
+java -cp classes/:lib/commons-compress-1.3.jar:lib/commons-lang-2.5.jar:lib/fastutil.jar:lib/faust-gazetteer-1.0.3003.jar:lib/htmlparser.jar:lib/jgraph.jar:lib/jgrapht.jar:lib/joda-time.jar:lib/lucene-core-3.0.3.jar:lib/protobuf-java-2.3.0.jar:lib/ra.jar:lib/stanford-corenlp-2012-05-22-models.jar:lib/stanford-corenlp-2012-05-22.jar:lib/xom.jar edu.stanford.nlp.kbp.slotfilling.distantsupervision.TestKBPReader -props tmp/tmp.properties
+
+config
+---
+# new indices over NFS, using our own customized annotation caching
+index.kbp = /home/ajay/Research/Stanford_system/mimlre-2012-11-27/tmp/index_dir
+test.input = /home/ajay/Research/Stanford_system/mimlre-2012-11-27/tmp/input_kb
+
+
+=================================================
+
+2) How to incorporate our model in the system ? 
+
+
+
+------------------------
+
+MultiLabelDataset<String, String> dataset 
+dataset.size() = no. of uniq pairs of (entitiyid, slotvalue) in the datum files. Basically the number of uniq argument pairs in the dataset. 
+In the paper it is 'n' in figure 2. Also confirmed from the sample dataset.
+
+
