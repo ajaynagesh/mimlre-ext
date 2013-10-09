@@ -18,6 +18,9 @@ import java.io.*;
 import java.util.*;
 
 /**
+ * Our version of the distant supervision relation extraction system.
+ */
+/**
  * Implements as closely as possible the MultiR algorithm from (Hoffmann et al., 2011)
  * @author Mihai
  */
