@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="lib/commons-compress-1.3.jar"/>
+	<classpathentry kind="lib" path="lib/commons-lang-2.5.jar"/>
+	<classpathentry kind="lib" path="lib/fastutil.jar"/>
+	<classpathentry kind="lib" path="lib/faust-gazetteer-1.0.3003.jar"/>
+	<classpathentry kind="lib" path="lib/htmlparser.jar"/>
+	<classpathentry kind="lib" path="lib/jgraph.jar"/>
+	<classpathentry kind="lib" path="lib/jgrapht.jar"/>
+	<classpathentry kind="lib" path="lib/joda-time.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-core-3.0.3.jar"/>
+	<classpathentry kind="lib" path="lib/protobuf-java-2.3.0.jar"/>
+	<classpathentry kind="lib" path="lib/ra.jar"/>
+	<classpathentry kind="lib" path="lib/stanford-corenlp-2012-05-22-models.jar"/>
+	<classpathentry kind="lib" path="lib/stanford-corenlp-2012-05-22.jar" sourcepath="libsrc/stanford-corenlp-2012-05-22-sources.jar"/>
+	<classpathentry kind="lib" path="lib/xom.jar"/>
+	<classpathentry kind="lib" path="libsrc/commons-compress-1.3-sources.jar"/>
+	<classpathentry kind="lib" path="libsrc/commons-lang-2.5-sources.jar"/>
+	<classpathentry kind="lib" path="libsrc/htmlparser-1.2-src.jar"/>
+	<classpathentry kind="lib" path="libsrc/jgrapht-src-0.7.3.jar"/>
+	<classpathentry kind="lib" path="libsrc/joda-time-2.0-sources.jar"/>
+	<classpathentry kind="lib" path="libsrc/stanford-corenlp-2012-05-22-sources.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="classes"/>
+</classpath>
