@@ -46,8 +46,8 @@ public class MultiLabelDataset<L, F> implements Serializable {
   
   public Index<L> suffFeatIndex; // Ajay: new variable for suffix features of entity types
 
-  protected Set<Integer> [] arg1Suffix;
-  protected Set<Integer> [] arg2Suffix;
+  protected List<Set<Integer>> arg1Suffix;
+  protected List<Set<Integer>> arg2Suffix;
   
 //	protected List<String> arg1_type;
 //	public List<String> getArg1_type() {
@@ -96,8 +96,8 @@ public MultiLabelDataset() {
     arg1Type = new Set[numDatums];
     arg2Type = new Set[numDatums];
     suffFeatIndex = new HashIndex<L>();
-    arg1Suffix = new Set[numDatums];
-    arg2Suffix = new Set[numDatums];
+    arg1Suffix = new ArrayList<Set<Integer>>();
+    arg2Suffix = new ArrayList<Set<Integer>>();
 
   }
   
@@ -299,17 +299,49 @@ public MultiLabelDataset() {
   
   protected void addArgFeatures(L arg1Val, L arg1Type, L arg2Val, List<L> arg2listTypes){
 	  
-	  int lastIndx = arg1Val.toString().length();
-	  if(lastIndx - 4 < 0)
-		  suffFeatIndex.add((L) arg1Val.toString().substring(0, lastIndx));
-	  else
-		  suffFeatIndex.add((L) arg1Val.toString().substring(lastIndx-4, lastIndx));
+	  int lastIndx;
 	  
-	  lastIndx = arg2Val.toString().length();
-	  if(lastIndx - 4 < 0)
-		  suffFeatIndex.add((L) arg2Val.toString().substring(0, lastIndx));
-	  else
-		  suffFeatIndex.add((L) arg2Val.toString().substring(lastIndx-4, lastIndx));	  
+	  if(arg1Type.toString().equalsIgnoreCase( "DATE")){
+		  // Do something different
+		  
+	  }
+	  else {
+		  
+		  lastIndx = arg1Val.toString().length();
+		  if(lastIndx - 4 < 0){
+			  for(int i = 0; i < lastIndx; i++)
+				  suffFeatIndex.add( (L) arg1Val.toString().substring(i, lastIndx));
+		  }
+		  else {
+			  for(int i = 1; i <= 4; i++)
+				  suffFeatIndex.add( (L) arg1Val.toString().substring(lastIndx-i, lastIndx));
+		  }
+	  }
+	  
+	  if(containsDate(arg2listTypes)){
+		  // Do something different
+
+	  }
+	  else {
+
+		  lastIndx = arg2Val.toString().length();
+		  if(lastIndx - 4 < 0){
+			  for(int i = 0; i < lastIndx; i++)
+				  suffFeatIndex.add((L) arg2Val.toString().substring(i, lastIndx));
+		  }
+		  else {
+			  for(int i = 1; i <= 4; i++)
+				  suffFeatIndex.add( (L) arg2Val.toString().substring(lastIndx-i, lastIndx));
+		  }
+	  }
+  }
+  
+  protected Boolean containsDate(List<L> argTypes){
+	  for(L type : argTypes){
+		  if(type.toString().equalsIgnoreCase("DATE"))
+			  return true;
+	  }
+	  return false;
   }
   
   protected void addArgTypes(L arg1, List<L> arg2list) {
