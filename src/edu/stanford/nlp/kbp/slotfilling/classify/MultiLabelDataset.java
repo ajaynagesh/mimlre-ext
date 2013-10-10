@@ -3,14 +3,18 @@ package edu.stanford.nlp.kbp.slotfilling.classify;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
 import edu.stanford.nlp.kbp.slotfilling.KBPTrainer;
 import edu.stanford.nlp.kbp.slotfilling.common.Log;
 import edu.stanford.nlp.ling.Datum;
+import edu.stanford.nlp.stats.ClassicCounter;
+import edu.stanford.nlp.stats.Counter;
 import edu.stanford.nlp.util.HashIndex;
 import edu.stanford.nlp.util.Index;
 
@@ -34,20 +38,22 @@ public class MultiLabelDataset<L, F> implements Serializable {
    */
   public Index<L> argTypeIndex; // Ajay: new variable for argument type
   
-  protected Set<Integer> [] arg1Type;
+  protected Set<Integer> [] arg1TypesArray;
   public Set<Integer>[] arg1TypeArray() {
-	return arg1Type;
+	return arg1TypesArray;
   }
 
-  protected Set<Integer> [] arg2Type;
+  protected Set<Integer> [] arg2TypesArray;
   public Set<Integer>[] arg2TypeArray() {
-	  return arg2Type;
+	  return arg2TypesArray;
   }
   
   public Index<L> suffFeatIndex; // Ajay: new variable for suffix features of entity types
 
-  protected List<Set<Integer>> arg1Suffix;
-  protected List<Set<Integer>> arg2Suffix;
+  protected Map<Integer, Counter<Integer>> suffixFeatCounts;
+  
+//  protected List<Set<Integer>> arg1Suffix;
+//  protected List<Set<Integer>> arg2Suffix;
   
 //	protected List<String> arg1_type;
 //	public List<String> getArg1_type() {
@@ -93,11 +99,12 @@ public MultiLabelDataset() {
  // Added by Ajay : 02/10/2013
     size = 0;
     argTypeIndex = new HashIndex<L>(); 
-    arg1Type = new Set[numDatums];
-    arg2Type = new Set[numDatums];
+    arg1TypesArray = new Set[numDatums];
+    arg2TypesArray = new Set[numDatums];
     suffFeatIndex = new HashIndex<L>();
-    arg1Suffix = new ArrayList<Set<Integer>>();
-    arg2Suffix = new ArrayList<Set<Integer>>();
+    suffixFeatCounts = new HashMap<Integer, Counter<Integer>>();
+//    arg1Suffix = new ArrayList<Set<Integer>>();
+//    arg2Suffix = new ArrayList<Set<Integer>>();
 
   }
   
@@ -291,6 +298,16 @@ public MultiLabelDataset() {
 	  /*
 	   * Added by ajay for arg types
 	   */
+
+	  // Treat PER--PERSON and ORG-ORGANIZATION same in the types 
+	  // DONE: (temporarily handled this. Leaving the comment to check for any future normalisations.
+	  
+	  if(arg1Type.equals("PER"))
+		  arg1Type = (L)"PERSON";
+	  else if(arg1Type.equals("ORG"))
+		  arg1Type = (L) "ORGANIZATION";
+	  
+	  
 	  addArgTypes(arg1Type, arg2listTypes);
 	  addArgFeatures(arg1Val, arg1Type, arg2Val, arg2listTypes);
 	  
@@ -302,37 +319,72 @@ public MultiLabelDataset() {
 	  int lastIndx;
 	  
 	  if(arg1Type.toString().equalsIgnoreCase( "DATE")){
-		  // Do something different
+		  // TODO: Do something different
 		  
 	  }
 	  else {
 		  
 		  lastIndx = arg1Val.toString().length();
 		  if(lastIndx - 4 < 0){
-			  for(int i = 0; i < lastIndx; i++)
-				  suffFeatIndex.add( (L) arg1Val.toString().substring(i, lastIndx));
+			  for(int i = 0; i < lastIndx; i++){
+				  L suffString = (L) arg1Val.toString().substring(i, lastIndx);
+				  suffFeatIndex.add(suffString);
+				  addSuffixFeat(suffString, arg1Type);
+			  }
 		  }
 		  else {
-			  for(int i = 1; i <= 4; i++)
-				  suffFeatIndex.add( (L) arg1Val.toString().substring(lastIndx-i, lastIndx));
+			  for(int i = 1; i <= 4; i++){
+				  L suffString =  (L) arg1Val.toString().substring(lastIndx-i, lastIndx);
+				  suffFeatIndex.add(suffString);
+				  addSuffixFeat(suffString, arg1Type);
+			  }
+				  
 		  }
 	  }
 	  
 	  if(containsDate(arg2listTypes)){
-		  // Do something different
+		  // TODO: Do something different
 
 	  }
 	  else {
 
 		  lastIndx = arg2Val.toString().length();
 		  if(lastIndx - 4 < 0){
-			  for(int i = 0; i < lastIndx; i++)
-				  suffFeatIndex.add((L) arg2Val.toString().substring(i, lastIndx));
+			  for(int i = 0; i < lastIndx; i++){
+				  L suffString = (L) arg2Val.toString().substring(i, lastIndx);
+				  suffFeatIndex.add(suffString);
+				  for(L arg2type : arg2listTypes)
+					  addSuffixFeat(suffString, arg2type);
+			  }
 		  }
 		  else {
-			  for(int i = 1; i <= 4; i++)
-				  suffFeatIndex.add( (L) arg2Val.toString().substring(lastIndx-i, lastIndx));
+			  for(int i = 1; i <= 4; i++){
+				  L suffString = (L) arg2Val.toString().substring(lastIndx-i, lastIndx);
+				  suffFeatIndex.add(suffString);
+				  for(L arg2type : arg2listTypes)
+					  addSuffixFeat(suffString, arg2type);
+			  }
 		  }
+	  }
+	  
+	  System.out.println("Arg1-type : " + arg1Type + " Arg1-type Index : " + argTypeIndex.indexOf(arg1Type));
+	  System.out.print("Arg2-type : " + arg2listTypes + " Arg2-type Index : ");
+	  for(L l : arg2listTypes){
+		  System.out.print(argTypeIndex.indexOf(l) + ", ");
+	  }
+	  System.out.println();
+	  
+  }
+  
+  private void addSuffixFeat(L suffString, L argType){
+	  if(suffixFeatCounts.containsKey(suffFeatIndex.indexOf(suffString))){
+		  	Counter<Integer> cntr = suffixFeatCounts.get(suffFeatIndex.indexOf(suffString));
+		  	cntr.incrementCount(argTypeIndex.indexOf(argType));
+	  }
+	  else {
+		  	Counter<Integer> cntr = new ClassicCounter<Integer>();
+		  	cntr.setCount(argTypeIndex.indexOf(argType), 1.0);
+		  	suffixFeatCounts.put(suffFeatIndex.indexOf(suffString), cntr);
 	  }
   }
   
@@ -345,18 +397,19 @@ public MultiLabelDataset() {
   }
   
   protected void addArgTypes(L arg1, List<L> arg2list) {
+	  	  
 	  argTypeIndex.add(arg1);
 	  argTypeIndex.addAll(arg2list);
 	  
 	  Set<Integer> newLabels = new HashSet<Integer>();
 	  newLabels.add(argTypeIndex.indexOf(arg1));
-	  arg1Type[size]= newLabels;
+	  arg1TypesArray[size]= newLabels;
 	  
 	  newLabels = new HashSet<Integer>();
 	  for(L l : arg2list){
 		  newLabels.add(argTypeIndex.indexOf(l));
 	  }
-	  arg2Type[size]= newLabels;
+	  arg2TypesArray[size]= newLabels;
   }
   
   protected void addFeatures(List<Collection<F>> group) {
@@ -420,12 +473,12 @@ public MultiLabelDataset() {
 		   * Ajay: 02/10/13: Added to accommodate type info
 		   */
 		  newLabels = new Set[size * 2];
-		  System.arraycopy(arg1Type, 0, newLabels, 0, size);
-		  arg1Type = newLabels;
+		  System.arraycopy(arg1TypesArray, 0, newLabels, 0, size);
+		  arg1TypesArray = newLabels;
 
 		  newLabels = new Set[size * 2];
-		  System.arraycopy(arg2Type, 0, newLabels, 0, size);
-		  arg2Type = newLabels;
+		  System.arraycopy(arg2TypesArray, 0, newLabels, 0, size);
+		  arg2TypesArray = newLabels;
 	  }
   }
 }

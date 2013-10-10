@@ -14,7 +14,7 @@
 	<classpathentry kind="lib" path="lib/protobuf-java-2.3.0.jar"/>
 	<classpathentry kind="lib" path="lib/ra.jar"/>
 	<classpathentry kind="lib" path="lib/stanford-corenlp-2012-05-22-models.jar"/>
-	<classpathentry kind="lib" path="lib/stanford-corenlp-2012-05-22.jar"/>
+	<classpathentry kind="lib" path="lib/stanford-corenlp-2012-05-22.jar" sourcepath="libsrc/stanford-corenlp-2012-05-22-sources.jar"/>
 	<classpathentry kind="lib" path="lib/xom.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
