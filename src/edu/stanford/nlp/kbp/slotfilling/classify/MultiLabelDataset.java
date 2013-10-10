@@ -52,18 +52,7 @@ public class MultiLabelDataset<L, F> implements Serializable {
 
   protected Map<Integer, Counter<Integer>> suffixFeatCounts;
   
-//  protected List<Set<Integer>> arg1Suffix;
-//  protected List<Set<Integer>> arg2Suffix;
-  
-//	protected List<String> arg1_type;
-//	public List<String> getArg1_type() {
-//		return arg1_type;
-//	}
-//  protected List<List<String>> arg2_types;
-//  public List<List<String>> getArg2_types() {
-//	return arg2_types;
-//  }
-
+  protected Counter<Integer> entityTypeCounts;
   
 
 public MultiLabelDataset() {
@@ -103,8 +92,7 @@ public MultiLabelDataset() {
     arg2TypesArray = new Set[numDatums];
     suffFeatIndex = new HashIndex<L>();
     suffixFeatCounts = new HashMap<Integer, Counter<Integer>>();
-//    arg1Suffix = new ArrayList<Set<Integer>>();
-//    arg2Suffix = new ArrayList<Set<Integer>>();
+    entityTypeCounts = new ClassicCounter<Integer>();
 
   }
   
@@ -367,12 +355,12 @@ public MultiLabelDataset() {
 		  }
 	  }
 	  
-	  System.out.println("Arg1-type : " + arg1Type + " Arg1-type Index : " + argTypeIndex.indexOf(arg1Type));
-	  System.out.print("Arg2-type : " + arg2listTypes + " Arg2-type Index : ");
-	  for(L l : arg2listTypes){
-		  System.out.print(argTypeIndex.indexOf(l) + ", ");
-	  }
-	  System.out.println();
+//	  System.out.println("Arg1-type : " + arg1Type + " Arg1-type Index : " + argTypeIndex.indexOf(arg1Type));
+//	  System.out.print("Arg2-type : " + arg2listTypes + " Arg2-type Index : ");
+//	  for(L l : arg2listTypes){
+//		  System.out.print(argTypeIndex.indexOf(l) + ", ");
+//	  }
+//	  System.out.println();
 	  
   }
   
@@ -400,6 +388,12 @@ public MultiLabelDataset() {
 	  	  
 	  argTypeIndex.add(arg1);
 	  argTypeIndex.addAll(arg2list);
+	  
+	  // Update the overall counts of the entity types
+	  entityTypeCounts.incrementCount(argTypeIndex.indexOf(arg1));
+	  for(L arg2 : arg2list){
+		  entityTypeCounts.incrementCount(argTypeIndex.indexOf(arg2));
+	  }
 	  
 	  Set<Integer> newLabels = new HashSet<Integer>();
 	  newLabels.add(argTypeIndex.indexOf(arg1));
