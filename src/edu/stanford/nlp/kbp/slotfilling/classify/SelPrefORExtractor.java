@@ -166,9 +166,6 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    nilIndex = labelIndex.indexOf(RelationMention.UNRELATED);
 	    zFeatureIndex = dataset.featureIndex();
 
-	    // System.out.println(labelIndex.get(nilIndex).toString() + " --> nil label");
-	    // System.out.println(labelIndex.get(nilIndex-1).toString() + " --> some label");
-	    
 	    zWeights = new LabelWeights[labelIndex.size()];
 	    for(int i = 0; i < zWeights.length; i ++)
 	      zWeights[i] = new LabelWeights(dataset.featureIndex().size());

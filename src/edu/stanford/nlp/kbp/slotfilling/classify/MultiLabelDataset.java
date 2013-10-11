@@ -274,6 +274,11 @@ public MultiLabelDataset() {
 	    add(yPos, yNeg, features, arg1Val, arg1Type, arg2Val, arg2listTypes); // Modified to add arg types
 	    //this.arg1_type.add(arg1);
 	    //this.arg2_types.add(arg2list);
+	    
+//	    for(L arg2 : arg2listTypes){
+//	    	if(arg2.equals("URL"))
+//	    		System.out.println(arg2 + " val : " + arg2Val + " ypos : " + yPos + " yneg : " + yNeg);
+//	    }
   }
   
   public void add(Set<L> yPos, Set<L> yNeg, List<Collection<F>> group, L arg1Val, L arg1Type, L arg2Val, List<L> arg2listTypes) {
@@ -364,7 +369,7 @@ public MultiLabelDataset() {
 	  
   }
   
-  private void addSuffixFeat(L suffString, L argType){
+  private void addSuffixFeat(L suffString, L argType){	  
 	  if(suffixFeatCounts.containsKey(suffFeatIndex.indexOf(suffString))){
 		  	Counter<Integer> cntr = suffixFeatCounts.get(suffFeatIndex.indexOf(suffString));
 		  	cntr.incrementCount(argTypeIndex.indexOf(argType));
