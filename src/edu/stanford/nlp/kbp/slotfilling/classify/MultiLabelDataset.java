@@ -101,6 +101,8 @@ public MultiLabelDataset() {
   public Index<L> labelIndex() { return labelIndex; }
 
   public Index<F> featureIndex() { return featureIndex; }
+  
+  public Index<L> argTypeIndex() { return argTypeIndex; }
 
   public int numFeatures() { return featureIndex.size(); }
 
@@ -200,6 +202,7 @@ public MultiLabelDataset() {
     return counts;
   }
 
+  // TODO: Check: Do we need to alter the new features added (entity suffix features) here ??
   /**
    * Applies a feature count threshold to the Dataset.
    * All features that occur fewer than <i>k</i> times are expunged.
@@ -296,7 +299,7 @@ public MultiLabelDataset() {
 	  // DONE: (temporarily handled this. Leaving the comment to check for any future normalisations.
 	  
 	  if(arg1Type.equals("PER"))
-		  arg1Type = (L)"PERSON";
+		  arg1Type = (L) "PERSON";
 	  else if(arg1Type.equals("ORG"))
 		  arg1Type = (L) "ORGANIZATION";
 	  
@@ -316,6 +319,8 @@ public MultiLabelDataset() {
 		  
 	  }
 	  else {
+		  
+		  // TODO: Lot of reititions in code in the following blocks. Consider writing a function
 		  
 		  lastIndx = arg1Val.toString().length();
 		  if(lastIndx - 4 < 0){

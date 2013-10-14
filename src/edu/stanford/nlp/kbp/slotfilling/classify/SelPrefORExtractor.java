@@ -138,8 +138,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
     this.epochs = epochs;
   }
   public SelPrefORExtractor(Properties props) {
-    Log.severe("HoffmannExtractor configured with the following properties:");
-    this.epochs = PropertiesUtils.getInt(props, Props.PERCEPTRON_EPOCHS, 10);
+    Log.severe("SelPrefORExtractor configured with the following properties:");
+    this.epochs = PropertiesUtils.getInt(props, Props.PERCEPTRON_EPOCHS, 10); // TODO: To add relevant information to our training algorithm
     Log.severe("epochs = " + epochs);
   }
 
@@ -170,10 +170,10 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    for(int i = 0; i < zWeights.length; i ++)
 	      zWeights[i] = new LabelWeights(dataset.featureIndex().size());
 
-	    // Weights for the entity types in a relation
+	    // Weights for the entity types in a relation (one for each argument)
 	    tWeights = new LabelWeights[2];
 	    for(int i = 0; i < 1; i++) // For the 2 arguments in a binary relation
-	    	tWeights[i] = new LabelWeights(0); 	    // TODO: Need to correctly initialise the number of labels
+	    	tWeights[i] = new LabelWeights(dataset.argTypeIndex().size());
 	    
 	    // repeat for a number of epochs
 	    for(int t = 0; t < epochs; t ++){
@@ -182,7 +182,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    	Log.severe("Started epoch #" + t + "...");
 	    	dataset.randomize(t);
 	      
-	    	// Need to update some statistics ??
+	    	// TODO: Check -- Need to update some statistics ??
 	        Counter<Integer> posUpdateStats = new ClassicCounter<Integer>();
 	        Counter<Integer> negUpdateStats = new ClassicCounter<Integer>();
 	      
@@ -708,6 +708,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
     return scores;
   }
 
+  // TODO: Check : Do we need to save more information on the serial file of our training model
   @Override
   public void save(String modelPath) throws IOException {
     // make sure the modelpath directory exists
