@@ -48,7 +48,9 @@ public class MultiLabelDataset<L, F> implements Serializable {
 	  return arg2TypesArray;
   }
   
-  public Index<L> suffFeatIndex; // Ajay: new variable for suffix features of entity types
+  public Index<L> argFeatIndex; // Ajay: new variable for suffix features of entity types
+  
+  public Index<L> argFeatIndex() { return argFeatIndex; }
 
   protected Map<Integer, Counter<Integer>> suffixFeatCounts;
   
@@ -90,7 +92,7 @@ public MultiLabelDataset() {
     argTypeIndex = new HashIndex<L>(); 
     arg1TypesArray = new Set[numDatums];
     arg2TypesArray = new Set[numDatums];
-    suffFeatIndex = new HashIndex<L>();
+    argFeatIndex = new HashIndex<L>();
     suffixFeatCounts = new HashMap<Integer, Counter<Integer>>();
     entityTypeCounts = new ClassicCounter<Integer>();
 
@@ -326,14 +328,14 @@ public MultiLabelDataset() {
 		  if(lastIndx - 4 < 0){
 			  for(int i = 0; i < lastIndx; i++){
 				  L suffString = (L) arg1Val.toString().substring(i, lastIndx);
-				  suffFeatIndex.add(suffString);
+				  argFeatIndex.add(suffString);
 				  addSuffixFeat(suffString, arg1Type);
 			  }
 		  }
 		  else {
 			  for(int i = 1; i <= 4; i++){
 				  L suffString =  (L) arg1Val.toString().substring(lastIndx-i, lastIndx);
-				  suffFeatIndex.add(suffString);
+				  argFeatIndex.add(suffString);
 				  addSuffixFeat(suffString, arg1Type);
 			  }
 				  
@@ -350,7 +352,7 @@ public MultiLabelDataset() {
 		  if(lastIndx - 4 < 0){
 			  for(int i = 0; i < lastIndx; i++){
 				  L suffString = (L) arg2Val.toString().substring(i, lastIndx);
-				  suffFeatIndex.add(suffString);
+				  argFeatIndex.add(suffString);
 				  for(L arg2type : arg2listTypes)
 					  addSuffixFeat(suffString, arg2type);
 			  }
@@ -358,7 +360,7 @@ public MultiLabelDataset() {
 		  else {
 			  for(int i = 1; i <= 4; i++){
 				  L suffString = (L) arg2Val.toString().substring(lastIndx-i, lastIndx);
-				  suffFeatIndex.add(suffString);
+				  argFeatIndex.add(suffString);
 				  for(L arg2type : arg2listTypes)
 					  addSuffixFeat(suffString, arg2type);
 			  }
@@ -375,14 +377,14 @@ public MultiLabelDataset() {
   }
   
   private void addSuffixFeat(L suffString, L argType){	  
-	  if(suffixFeatCounts.containsKey(suffFeatIndex.indexOf(suffString))){
-		  	Counter<Integer> cntr = suffixFeatCounts.get(suffFeatIndex.indexOf(suffString));
+	  if(suffixFeatCounts.containsKey(argFeatIndex.indexOf(suffString))){
+		  	Counter<Integer> cntr = suffixFeatCounts.get(argFeatIndex.indexOf(suffString));
 		  	cntr.incrementCount(argTypeIndex.indexOf(argType));
 	  }
 	  else {
 		  	Counter<Integer> cntr = new ClassicCounter<Integer>();
 		  	cntr.setCount(argTypeIndex.indexOf(argType), 1.0);
-		  	suffixFeatCounts.put(suffFeatIndex.indexOf(suffString), cntr);
+		  	suffixFeatCounts.put(argFeatIndex.indexOf(suffString), cntr);
 	  }
   }
   

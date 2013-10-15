@@ -2,6 +2,7 @@ package edu.stanford.nlp.kbp.slotfilling.classify;
 
 import edu.stanford.nlp.ie.machinereading.structure.RelationMention;
 import edu.stanford.nlp.kbp.slotfilling.KBPTrainer;
+import edu.stanford.nlp.kbp.slotfilling.classify.HoffmannExtractor.LabelWeights;
 import edu.stanford.nlp.kbp.slotfilling.common.Constants;
 import edu.stanford.nlp.kbp.slotfilling.common.Log;
 import edu.stanford.nlp.kbp.slotfilling.common.Props;
@@ -28,7 +29,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   private static final long serialVersionUID = 1L;
   private static final int LABEL_ALL = -1;
 
-  private static int ALGO_TYPE;
+  private static int ALGO_TYPE; // 1 - for test type 1 , 2 - for test type 2 (cf. write-up,notes on google doc)
   
   /**
    * Stores weight information for one label
@@ -170,10 +171,10 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    for(int i = 0; i < zWeights.length; i ++)
 	      zWeights[i] = new LabelWeights(dataset.featureIndex().size());
 
-	    // Weights for the entity types in a relation (one for each argument)
-	    tWeights = new LabelWeights[2];
-	    for(int i = 0; i < 1; i++) // For the 2 arguments in a binary relation
-	    	tWeights[i] = new LabelWeights(dataset.argTypeIndex().size());
+	    // Weights for the entity types in a relation (one for each type of entity)
+	    tWeights = new LabelWeights[dataset.argTypeIndex().size()];
+	    for(int i = 0; i < tWeights.length; i++) 
+	    	tWeights[i] = new LabelWeights(dataset.argFeatIndex().size());
 	    
 	    // repeat for a number of epochs
 	    for(int t = 0; t < epochs; t ++){
@@ -181,26 +182,34 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    	// use a fixed seed for replicability
 	    	Log.severe("Started epoch #" + t + "...");
 	    	dataset.randomize(t);
-	      
-	    	// TODO: Check -- Need to update some statistics ??
-	        Counter<Integer> posUpdateStats = new ClassicCounter<Integer>();
-	        Counter<Integer> negUpdateStats = new ClassicCounter<Integer>();
-	      
-	      	// traverse the relation dataset
-	      	for(int i = 0; i < dataset.size(); i ++){
-	      		int [][] crtGroup = dataset.getDataArray()[i];
-	      		Set<Integer> goldPos = dataset.getPositiveLabelsArray()[i];
-	      	
-	      		Set<Integer> arg1Type = dataset.arg1TypeArray()[i];
-	      		Set<Integer> arg2Type = dataset.arg2TypeArray()[i];
-	      		
-	      		trainJointly(crtGroup, goldPos, arg1Type, arg2Type, posUpdateStats, negUpdateStats);
 
-	          // update the number of iterations an weight vector has survived
-	          for(LabelWeights zw: zWeights) zw.updateSurvivalIterations();
-	        }
-	      
+	    	// TODO: Check -- Need to update some statistics ??
+	    	Counter<Integer> posUpdateStats = new ClassicCounter<Integer>();
+	    	Counter<Integer> negUpdateStats = new ClassicCounter<Integer>();
+
+	    	// traverse the relation dataset
+	    	for(int i = 0; i < dataset.size(); i ++){
+	    		int [][] crtGroup = dataset.getDataArray()[i];
+	    		Set<Integer> goldPos = dataset.getPositiveLabelsArray()[i];
+
+	    		Set<Integer> arg1Type = dataset.arg1TypeArray()[i];
+	    		Set<Integer> arg2Type = dataset.arg2TypeArray()[i];
+
+	    		trainJointly(crtGroup, goldPos, arg1Type, arg2Type, posUpdateStats, negUpdateStats);
+
+	    		// update the number of iterations an weight vector has survived
+	    		for(LabelWeights zw: zWeights) zw.updateSurvivalIterations();
+	    	}
+
+	    	Log.severe("Epoch #" + t + " completed. Inspected " +
+	    			dataset.size() + " datum groups. Performed " +
+	    			posUpdateStats.getCount(LABEL_ALL) + " ++ updates and " +
+	    			negUpdateStats.getCount(LABEL_ALL) + " -- updates.");
+	    	
 	    }
+
+	    // finalize learning: add the last vector to the avg for each label
+	    for(LabelWeights zw: zWeights) zw.addToAverage();
   }
   
   static public List<File> fetchFiles(String path, final String extension) {
@@ -270,54 +279,55 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  train(props);
 
   }
-  /*@Override
-  public void train(MultiLabelDataset<String, String> dataset) {  
-	  
-    Log.severe("Training the \"at least once\" model using "
-            + dataset.featureIndex().size() + " features and "
-            + "the following labels: " + dataset.labelIndex().toString());
+  
+  /*
+   *	INFERENCE ROUTINES
+   *	-----------------------
+   * 
+   *   \argmax Pr (Z | Y_i, T_i)  → plain enumeration and choosing the max among them
+   *   
+   *   \argmax Pr (Y, Z | T_i): Gibbs_Y 
+   *   						while (not_converged){								    
+								Step 1: // update X vars assuming Y vars to be fixed .. 			   
+											done by simple enumeration   			   
+										   
+								Step 2: // update Y assuming Z to be fixed .. done by Gibbs Sampling	   
+									while (not_converged){						    
+										choose a random permutation of Y variables → \Pi
+										for ( i = 1 to |Y| ) {						    
+												update Y_{\Pi_i} assuming the rest is fixed		    
+										}								    
+									}									    
+							}
+							
+		\argmax Pr (Z, T | Y): Given Y, Z and T are independent of each other; 
+								So their maxima can be found independently. Gibbs_T
 
-    labelIndex = dataset.labelIndex();
-    // add the NIL label
-    labelIndex.add(RelationMention.UNRELATED);
-    nilIndex = labelIndex.indexOf(RelationMention.UNRELATED);
-    zFeatureIndex = dataset.featureIndex();
+							updating Z → plain enumeration and choosing the max among them 
 
-    zWeights = new LabelWeights[labelIndex.size()];
-    for(int i = 0; i < zWeights.length; i ++)
-      zWeights[i] = new LabelWeights(dataset.featureIndex().size());
+							updating T: 
 
-    // repeat for a number of epochs
-    for(int t = 0; t < epochs; t ++){
-      // randomize the data set in each epoch
-      // use a fixed seed for replicability
-      Log.severe("Started epoch #" + t + "...");
-      dataset.randomize(t);
+									while (not_converged) {							
+										choose a random permutation for T variable → \Pi			
+										
+										for ( i = 1 to |T| ) {						
+											update T_{\Pi_i} given the rest is fixed		
+										}									
+									}
+									
+		\argmax P(Y, Z, T)
 
-      Counter<Integer> posUpdateStats = new ClassicCounter<Integer>();
-      Counter<Integer> negUpdateStats = new ClassicCounter<Integer>();
+						while (not_converged){
 
-      // traverse the relation dataset
-      for(int i = 0; i < dataset.size(); i ++){
-        int [][] crtGroup = dataset.getDataArray()[i];
-        Set<Integer> goldPos = dataset.getPositiveLabelsArray()[i];
+							update Z (simple enumeration)
 
-        trainJointly(crtGroup, goldPos, posUpdateStats, negUpdateStats);
+							update T (Gibbs_T)
 
-        // update the number of iterations an weight vector has survived
-        for(LabelWeights zw: zWeights) zw.updateSurvivalIterations();
-      }
-
-      Log.severe("Epoch #" + t + " completed. Inspected " +
-              dataset.size() + " datum groups. Performed " +
-              posUpdateStats.getCount(LABEL_ALL) + " ++ updates and " +
-              negUpdateStats.getCount(LABEL_ALL) + " -- updates.");
-    }
-
-    // finalize learning: add the last vector to the avg for each label
-    for(LabelWeights zw: zWeights) zw.addToAverage();
-  }
-*/
+							update Y (Gibbs_Y)
+						}
+   * 
+   */
+  
   private void trainJointly(
 		  int [][] crtGroup,
           Set<Integer> goldPos,
@@ -328,30 +338,38 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  
 	  	// all local predictions using local Z models
 	    List<Counter<Integer>> zs = estimateZ(crtGroup);
-	    // best predictions for each mention -- generating \hat(Z)
+	    // zPredicted -- generating \hat(Z) = Pr (Z | Y_i, T_i) ~ Pr (Z | Y_i) TODO: Check if this is correct ...
 	    int [] zPredicted = generateZPredicted(zs);
 	    
+	    Counter<Integer> yPredicted = null;
+	    
 	    if(ALGO_TYPE == 1){
-	    	int [] tPredicted = generateTPredicted();
+	    	// yPredicted -- generating \hat(Y)
+	    	yPredicted = estimateY(zPredicted, arg1Type, arg2Type);
 	    }
-	    	
-	    // yPredicted - Y labels predicted using the current Zs (full inference) -- generating \hat(Y)
-	    Counter<Integer> yPredicted = estimateY(zPredicted);
+	    
+	    else if(ALGO_TYPE == 2) {
+	    	int [] tPredicted = generateTPredicted();
+	    	// yPredicted -- generating \hat(Y)
+	    	//yPredicted = estimateY(zPredicted); // TODO: Need to figure out how this is is done
+	    }
 	    
 	    if(updateCondition(yPredicted.keySet(), goldPos)){
-	    	// conditional inference
-	        Set<Integer> [] zUpdate = generateZUpdate(goldPos, zs);
-	        
-	        if(ALGO_TYPE == 1){
-	        	Set<Integer> [] tUpdate = generateTUpdate(goldPos, zs);
-	        
+	    	
+	    	Set<Integer> [] zUpdate;
+	    	Set<Integer> [] tUpdate;
+	    	
+	    	if(ALGO_TYPE == 1){
+	    		zUpdate = generateZUpdate(goldPos, zs);
+	    		// update weights
+		        updateZModel(zUpdate, zPredicted, crtGroup, posUpdateStats, negUpdateStats);
+	    	}
+	    	else if(ALGO_TYPE == 2){
+	    		zUpdate = generateZUpdate(goldPos, zs);
+	    		tUpdate = generateTUpdate(goldPos, zs);
 	        	// update weights
 		        updateZModel(zUpdate, zPredicted, crtGroup, posUpdateStats, negUpdateStats);
-	        }
-	        else {
-	        	// update weights
-		        updateZModel(zUpdate, zPredicted, crtGroup, posUpdateStats, negUpdateStats);
-	        }
+	    	}
 	    }
 	    
   }
@@ -370,27 +388,6 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  return tPredicted;
   }
   
-  /*private void trainJointly(
-          int [][] crtGroup,
-          Set<Integer> goldPos,
-          Counter<Integer> posUpdateStats,
-          Counter<Integer> negUpdateStats) {
-    // all local predictions using local Z models
-    List<Counter<Integer>> zs = estimateZ(crtGroup);
-    // best predictions for each mention
-    int [] zPredicted = generateZPredicted(zs);
-
-    // yPredicted - Y labels predicted using the current Zs (full inference)
-    Counter<Integer> yPredicted = estimateY(zPredicted);
-
-    if(updateCondition(yPredicted.keySet(), goldPos)){
-      // conditional inference
-      Set<Integer> [] zUpdate = generateZUpdate(goldPos, zs);
-      // update weights
-      updateZModel(zUpdate, zPredicted, crtGroup, posUpdateStats, negUpdateStats);
-    }
-  }
-  */
   private void updateZModel(
           Set<Integer> [] goldZ,
           int [] predictedZ,
@@ -593,16 +590,12 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   }
 
   /**
-   * Estimate Y labels given a list of Z predictions for this tuple
-   * This is done using a deterministic OR
+   * TODO: Need to code this up correctly
+   * 
    */
-  private Counter<Integer> estimateY(int [] zPredicted) {
+  private Counter<Integer> estimateY(int [] zPredicted, Set<Integer> arg1Type, Set<Integer> arg2Type) {
     Counter<Integer> ys = new ClassicCounter<Integer>();
-    for(int zp: zPredicted) {
-      if(zp != nilIndex) {
-        ys.setCount(zp, 1);
-      }
-    }
+    
     return ys;
   }
 
