@@ -281,6 +281,56 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   }
   
   /*
+   * TRAINING ROUTINES
+   * -----------------------
+   * 
+   * (For test data type 1)
+   * 
+   * for t = 1 to EPOCH {
+   * 	for i = 1 to N {
+   * 		\hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
+   *
+				    [ \argmax Pr (Y, Z | T_i): Gibbs_Y 
+				     						while (not_converged){								    
+												Step 1: // update Z vars assuming Y vars to be fixed .. 			   
+															done by simple enumeration   			   
+														   
+												Step 2: // update Y assuming Z to be fixed .. done by Gibbs Sampling	   
+													while (not_converged){						    
+														choose a random permutation of Y variables → \Pi
+														for ( i = 1 to |Y| ) {						    
+																update Y_{\Pi_i} assuming the rest is fixed		    
+														}								    
+													}									    
+											}
+					]
+   * 
+   * 
+   * 
+   * 		if (\hat{Y} != Y_i) {
+   * 			Z* = argmax_Z P_{\theta} (Z | Y_i, T_i, x_i)
+   * 			\theta^{new} = \theta^{old} + \eta * [ F(Z*,T_i,x_i) - F(\hat{Z}, T_i, x_i) ]
+   * 		}
+   * 	}
+   * }
+   * 
+   * (For test data type 2)
+   * 
+   * for t = 1 to EPOCH {
+   * 	for i = 1 to N {
+   * 		\hat{Y,Z,T} = argmax_{Y,Z,T} Pr_{\theta} (Y, Z, T | x_i)
+   * 
+   * 		if (\hat{Y} != Y_i) {
+   * 			Z*, T* = argmax_{Z,T} P_{\theta} (Z, T | Y_i, x_i)
+   * 			\theta^{new} = \theta^{old} + \eta * [ F(Z*,T*,x_i) - F(\hat{Z}, \hat{T}, x_i) ]
+   * 		}
+   * 	}
+   * }
+   * 
+   */
+  
+  
+  /*
    *	INFERENCE ROUTINES
    *	-----------------------
    * 
@@ -288,7 +338,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
    *   
    *   \argmax Pr (Y, Z | T_i): Gibbs_Y 
    *   						while (not_converged){								    
-								Step 1: // update X vars assuming Y vars to be fixed .. 			   
+								Step 1: // update Z vars assuming Y vars to be fixed .. 			   
 											done by simple enumeration   			   
 										   
 								Step 2: // update Y assuming Z to be fixed .. done by Gibbs Sampling	   
@@ -301,7 +351,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 							}
 							
 		\argmax Pr (Z, T | Y): Given Y, Z and T are independent of each other; 
-								So their maxima can be found independently. Gibbs_T
+								So their maxima can be found independently. : Gibbs_T
 
 							updating Z → plain enumeration and choosing the max among them 
 
@@ -335,10 +385,28 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
           Set<Integer> arg2Type,
           Counter<Integer> posUpdateStats,
           Counter<Integer> negUpdateStats) {
+	  	
+	  	// \hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
+	  
+		  /*
+		   * while (not_converged){								    
+									Step 1: // update Z vars assuming Y vars to be fixed .. 			   
+												done by simple enumeration   			   
+											   
+									Step 2: // update Y assuming Z to be fixed .. done by Gibbs Sampling	   
+										while (not_converged){						    
+											choose a random permutation of Y variables → \Pi
+											for ( i = 1 to |Y| ) {						    
+													update Y_{\Pi_i} assuming the rest is fixed		    
+											}								    
+										}									    
+								}
+		   * 
+		   */
 	  
 	  	// all local predictions using local Z models
 	    List<Counter<Integer>> zs = estimateZ(crtGroup);
-	    // zPredicted -- generating \hat(Z) = Pr (Z | Y_i, T_i) ~ Pr (Z | Y_i) TODO: Check if this is correct ...
+	    // zPredicted -- generating \hat(Z)
 	    int [] zPredicted = generateZPredicted(zs);
 	    
 	    Counter<Integer> yPredicted = null;
@@ -513,7 +581,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 
   /** The conditional inference from (Hoffmann et al., 2011) */
   /*
-   * This needs to be replaced by our inference code
+   * TODO: This needs to be replaced by our inference code
    */
   private Set<Integer> [] generateZUpdate(
           Set<Integer> goldPos,
