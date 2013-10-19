@@ -134,6 +134,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   int nilIndex;
   /** Number of epochs during training */
   final int epochs;
+  
+  int epochsInf;
 
   public SelPrefORExtractor(int epochs) {
     this.epochs = epochs;
@@ -278,6 +280,14 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 
 	  train(props);
 
+  }
+  
+  void gibbsYvar(){
+	  
+	  for(int i = 0; i < epochsInf; i++){ // TODO: Need to determine the right val. or another stopping criterion
+		  
+	  }
+	  
   }
   
   /*
