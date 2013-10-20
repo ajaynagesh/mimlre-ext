@@ -315,14 +315,26 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  
   }
   
+  // TODO: Need to implement the randomization routine
+  private Counter<Integer> randomizeVar(){
+	  Counter<Integer> rVar = new ClassicCounter<Integer>();
+	  
+	  return rVar;
+  }
   
   private int [] gibbsSampler(int [] zPredicted){
 	  
-	  Counter<Integer> ys = new ClassicCounter<Integer>();
-	  int [] yPredicted = new int[10];
+	  LabelWeights [] yVars = new LabelWeights[labelIndex.size()];
+	  double[] yValsForOneY = new double[labelIndex.size()];
+	  int [] yPredicted = new int[10]; // TODO: Init the correct val
+	  
+	  
 	  for(int i = 0; i < epochsInf; i++){ // TODO: Need to determine the right val. or another stopping criterion
+		  Counter<Integer> randomizedY = randomizeVar();
 		  
-		  
+		  for(int yVal : randomizedY.keySet()){
+			  
+		  }
 		  
 	  }
 	  
