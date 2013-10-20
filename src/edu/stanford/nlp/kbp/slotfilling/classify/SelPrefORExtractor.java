@@ -134,6 +134,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   int nilIndex;
   /** Number of epochs during training */
   final int epochs;
+  
+  int epochsInf;
 
   public SelPrefORExtractor(int epochs) {
     this.epochs = epochs;
@@ -281,103 +283,52 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   }
   
   /*
-   * TRAINING ROUTINES
-   * -----------------------
-   * 
-   * (For test data type 1)
-   * 
-   * for t = 1 to EPOCH {
-   * 	for i = 1 to N {
-   * 		\hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
-   *
-				    [ \argmax Pr (Y, Z | T_i): Gibbs_Y 
-				     						while (not_converged){								    
-												Step 1: // update Z vars assuming Y vars to be fixed .. 			   
-															done by simple enumeration   			   
-														   
-												Step 2: // update Y assuming Z to be fixed .. done by Gibbs Sampling	   
-													while (not_converged){						    
-														choose a random permutation of Y variables → \Pi
-														for ( i = 1 to |Y| ) {						    
-																update Y_{\Pi_i} assuming the rest is fixed		    
-														}								    
-													}									    
-											}
-					]
-   * 
-   * 
-   * 
-   * 		if (\hat{Y} != Y_i) {
-   * 			Z* = argmax_Z P_{\theta} (Z | Y_i, T_i, x_i)
-   * 			\theta^{new} = \theta^{old} + \eta * [ F(Z*,T_i,x_i) - F(\hat{Z}, T_i, x_i) ]
-   * 		}
-   * 	}
-   * }
-   * 
-   * (For test data type 2)
-   * 
-   * for t = 1 to EPOCH {
-   * 	for i = 1 to N {
-   * 		\hat{Y,Z,T} = argmax_{Y,Z,T} Pr_{\theta} (Y, Z, T | x_i)
-   * 
-   * 		if (\hat{Y} != Y_i) {
-   * 			Z*, T* = argmax_{Z,T} P_{\theta} (Z, T | Y_i, x_i)
-   * 			\theta^{new} = \theta^{old} + \eta * [ F(Z*,T*,x_i) - F(\hat{Z}, \hat{T}, x_i) ]
-   * 		}
-   * 	}
-   * }
-   * 
-   */
-  
-  
-  /*
-   *	INFERENCE ROUTINES
-   *	-----------------------
-   * 
-   *   \argmax Pr (Z | Y_i, T_i)  → plain enumeration and choosing the max among them
-   *   
-   *   \argmax Pr (Y, Z | T_i): Gibbs_Y 
-   *   						while (not_converged){								    
-								Step 1: // update Z vars assuming Y vars to be fixed .. 			   
-											done by simple enumeration   			   
-										   
-								Step 2: // update Y assuming Z to be fixed .. done by Gibbs Sampling	   
-									while (not_converged){						    
-										choose a random permutation of Y variables → \Pi
-										for ( i = 1 to |Y| ) {						    
-												update Y_{\Pi_i} assuming the rest is fixed		    
-										}								    
-									}									    
-							}
-							
-		\argmax Pr (Z, T | Y): Given Y, Z and T are independent of each other; 
-								So their maxima can be found independently. : Gibbs_T
-
-							updating Z → plain enumeration and choosing the max among them 
-
-							updating T: 
-
-									while (not_converged) {							
-										choose a random permutation for T variable → \Pi			
-										
-										for ( i = 1 to |T| ) {						
-											update T_{\Pi_i} given the rest is fixed		
-										}									
-									}
-									
-		\argmax P(Y, Z, T)
-
-						while (not_converged){
-
-							update Z (simple enumeration)
-
-							update T (Gibbs_T)
-
-							update Y (Gibbs_Y)
+   * while (not_converged){								    
+							Step 1: // update Z vars assuming Y vars to be fixed .. 			   
+										done by simple enumeration   			   
+									   
+							Step 2: // update Y assuming Z to be fixed .. done by Gibbs Sampling	   
+								while (not_converged){						    
+									choose a random permutation of Y variables → \Pi
+									for ( i = 1 to |Y| ) {						    
+											update Y_{\Pi_i} assuming the rest is fixed		    
+									}								    
+								}									    
 						}
    * 
    */
   
+//\hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
+  private void ComputePrYZ_Ti () {
+	  
+  }
+  
+  private void ComputePrZT_Yi () {
+	  
+  }
+  
+  private void ComputePrYZT () {
+	  
+  }
+  
+  private void computeFactor() {
+	  
+  }
+  
+  
+  private int [] gibbsSampler(int [] zPredicted){
+	  
+	  Counter<Integer> ys = new ClassicCounter<Integer>();
+	  int [] yPredicted = new int[10];
+	  for(int i = 0; i < epochsInf; i++){ // TODO: Need to determine the right val. or another stopping criterion
+		  
+		  
+		  
+	  }
+	  
+	  return yPredicted;
+  }
+    
   private void trainJointly(
 		  int [][] crtGroup,
           Set<Integer> goldPos,
@@ -387,22 +338,6 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
           Counter<Integer> negUpdateStats) {
 	  	
 	  	// \hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
-	  
-		  /*
-		   * while (not_converged){								    
-									Step 1: // update Z vars assuming Y vars to be fixed .. 			   
-												done by simple enumeration   			   
-											   
-									Step 2: // update Y assuming Z to be fixed .. done by Gibbs Sampling	   
-										while (not_converged){						    
-											choose a random permutation of Y variables → \Pi
-											for ( i = 1 to |Y| ) {						    
-													update Y_{\Pi_i} assuming the rest is fixed		    
-											}								    
-										}									    
-								}
-		   * 
-		   */
 	  
 	  	// all local predictions using local Z models
 	    List<Counter<Integer>> zs = estimateZ(crtGroup);
