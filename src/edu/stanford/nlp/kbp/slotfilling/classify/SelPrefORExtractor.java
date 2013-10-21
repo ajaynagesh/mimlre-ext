@@ -298,9 +298,74 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
    * 
    */
   
-//\hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
-  private void ComputePrYZ_Ti () {
+
+  private Counter<Integer> estimateZ(int [] datum) {
+    Counter<Integer> vector = new ClassicCounter<Integer>();
+    for(int d: datum) vector.incrementCount(d);
+
+    Counter<Integer> scores = new ClassicCounter<Integer>();
+    for(int label = 0; label < zWeights.length; label ++){
+      double score = zWeights[label].dotProduct(vector);
+      scores.setCount(label, score);
+    }
+
+    return scores;
+  }
+  /**
+   * New estimateZ function which computes the factors given Yi
+   * @param datum
+   * @param Yi
+   * @return
+   */
+  private Counter<Integer> estimateZ(int [] datum, Set<Integer> Yi) {
+	    Counter<Integer> vector = new ClassicCounter<Integer>();
+	    for(int d: datum) vector.incrementCount(d);
+	    
+	    Counter<Integer> Yvector = new ClassicCounter<Integer>();
+	    for(int y : Yi) vector.incrementCount(y);
+
+	    Counter<Integer> scores = new ClassicCounter<Integer>();
+	    
+	    for(int label = 0; label < zWeights.length; label ++){
+	      double score = zWeights[label].dotProduct(vector);
+	      score += zWeights[label].dotProduct(Yvector); // note the addition to the score
+	      scores.setCount(label, score);
+	    }
+
+	    return scores;
+	  }
+  
+  private List<Counter<Integer>> ComputePrZ_Yi (int [][] datums, Set<Integer> Yi) {
+	  List<Counter<Integer>> zs = new ArrayList<Counter<Integer>>();
 	  
+	  for(int [] datum: datums) {
+	      zs.add(estimateZ(datum, Yi));
+	  }
+	  
+	  return zs;
+  }
+  
+//\hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
+  private void ComputePrYZ_Ti (int [][] datums, int szY, Set<Integer> arg1Type, Set<Integer> arg2Type) {
+	  Set<Integer> yPredicted = null; //  TODO: Initialize yPredicted. How ? 
+	  
+	  for (int i = 0; i < epochsInf; i ++){ // TODO: What is the stopping criterion
+		  
+		  // update Z assuming Y fixed 
+		  List<Counter<Integer>> zs = ComputePrZ_Yi(datums, yPredicted);
+		  int [] zPredicted = generateZPredicted(zs);
+		  
+		  // update Y assuming Z fixed (to zPredicted)
+		  for (int j = 0; j < epochsInf; j++){ // TODO: What is the stopping criterion
+			  Counter<Integer> randomizedY = randomizeVar();
+			  
+			  for(int k = 0; k < szY; k ++){
+				  Counter<Integer> y = estimateY(zPredicted, szY, arg1Type, arg2Type);
+				  
+			  }
+		  }
+		  
+	  }
   }
   
   private void ComputePrZT_Yi () {
@@ -322,10 +387,15 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  return rVar;
   }
   
-  private int [] gibbsSampler(int [] zPredicted){
+  /*private int [] gibbsSampler(int [] zPredicted){
 	  
-	  LabelWeights [] yVars = new LabelWeights[labelIndex.size()];
-	  double[] yValsForOneY = new double[labelIndex.size()];
+	  // TODO: check - init. to be done here or in constructor ??
+	  LabelWeights [] yVarsWts = new LabelWeights[10]; //TODO: No. of Y vars need to be intialised
+	  for(LabelWeights yWt : yVarsWts){
+		  yWt = new LabelWeights(labelIndex.size());
+	  }
+	  
+	  
 	  int [] yPredicted = new int[10]; // TODO: Init the correct val
 	  
 	  
@@ -333,13 +403,13 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 		  Counter<Integer> randomizedY = randomizeVar();
 		  
 		  for(int yVal : randomizedY.keySet()){
-			  
+			  computeFactor();
 		  }
 		  
 	  }
 	  
 	  return yPredicted;
-  }
+  }*/
     
   private void trainJointly(
 		  int [][] crtGroup,
@@ -350,9 +420,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
           Counter<Integer> negUpdateStats) {
 	  	
 	  	// \hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
-	  
-	  	// all local predictions using local Z models
-	    List<Counter<Integer>> zs = estimateZ(crtGroup);
+	    List<Counter<Integer>> zs = ComputePrZ_Yi(crtGroup, goldPos);
 	    // zPredicted -- generating \hat(Z)
 	    int [] zPredicted = generateZPredicted(zs);
 	    
@@ -360,7 +428,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    
 	    if(ALGO_TYPE == 1){
 	    	// yPredicted -- generating \hat(Y)
-	    	yPredicted = estimateY(zPredicted, arg1Type, arg2Type);
+	    	//yPredicted = estimateY(zPredicted, arg1Type, arg2Type);
 	    }
 	    
 	    else if(ALGO_TYPE == 2) {
@@ -608,8 +676,22 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
    * TODO: Need to code this up correctly
    * 
    */
-  private Counter<Integer> estimateY(int [] zPredicted, Set<Integer> arg1Type, Set<Integer> arg2Type) {
+  private Counter<Integer> estimateY(int [] zPredicted, int ySz, Set<Integer> arg1Type, Set<Integer> arg2Type) {
     Counter<Integer> ys = new ClassicCounter<Integer>();
+    
+    LabelWeights yWeights = new LabelWeights(ySz);
+    
+    // arg1vector
+    Counter<Integer> arg1TypeVector = new ClassicCounter<Integer>();
+    for(int arg1 : arg1Type) arg1TypeVector.incrementCount(arg1);
+    
+    // arg2vector
+    Counter<Integer> arg2TypeVector = new ClassicCounter<Integer>();
+    for(int arg2 : arg2Type) arg2TypeVector.incrementCount(arg2);
+    
+    // zpredVector
+    Counter<Integer> zPredVector = new ClassicCounter<Integer>();
+    for(int z : zPredicted) zPredVector.incrementCount(z);
     
     return ys;
   }
@@ -620,19 +702,6 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
       zs.add(estimateZ(datum));
     }
     return zs;
-  }
-
-  private Counter<Integer> estimateZ(int [] datum) {
-    Counter<Integer> vector = new ClassicCounter<Integer>();
-    for(int d: datum) vector.incrementCount(d);
-
-    Counter<Integer> scores = new ClassicCounter<Integer>();
-    for(int label = 0; label < zWeights.length; label ++){
-      double score = zWeights[label].dotProduct(vector);
-      scores.setCount(label, score);
-    }
-
-    return scores;
   }
 
   private int [] generateZPredicted(List<Counter<Integer>> zs) {
