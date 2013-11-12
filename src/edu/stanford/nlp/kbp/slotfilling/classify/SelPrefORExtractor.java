@@ -288,9 +288,9 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 										done by simple enumeration   			   
 									   
 							Step 2: // update Y assuming Z to be fixed .. done by Gibbs Sampling	   
-								while (not_converged){						    
+								while (not_converged){						   
 									choose a random permutation of Y variables → \Pi
-									for ( i = 1 to |Y| ) {						    
+									for ( i = 1 to |Y| ) {						   
 											update Y_{\Pi_i} assuming the rest is fixed		    
 									}								    
 								}									    
@@ -410,7 +410,29 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  
 	  return yPredicted;
   }*/
-    
+  
+  List<Counter<Integer>> ComputeY_ZiTi(){
+	  List<Counter<Integer>> ys = new ArrayList<Counter<Integer>>();
+	  
+	  return ys;
+  }
+  
+  Counter<Integer> generateYPredicted(List<Counter<Integer>> ys) {
+	  Counter<Integer> yPredicted = new ClassicCounter<Integer>();
+	  
+	  return yPredicted;
+  }
+  
+  private void trainJointly(
+		  int [][] crtGroup,
+          Set<Integer> goldPos,
+          Set<Integer> arg1Type,
+          Set<Integer> arg2Type,
+          Counter<Integer> posUpdateStats,
+          Counter<Integer> negUpdateStats, int diff) {
+	  
+  }
+  
   private void trainJointly(
 		  int [][] crtGroup,
           Set<Integer> goldPos,
@@ -420,7 +442,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
           Counter<Integer> negUpdateStats) {
 	  	
 	  	// \hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
-	    List<Counter<Integer>> zs = ComputePrZ_Yi(crtGroup, goldPos);
+	  	// 1st estimate Z and compute \hat{Z}
+	    List<Counter<Integer>> zs = estimateZ(crtGroup);
 	    // zPredicted -- generating \hat(Z)
 	    int [] zPredicted = generateZPredicted(zs);
 	    
@@ -428,7 +451,10 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    
 	    if(ALGO_TYPE == 1){
 	    	// yPredicted -- generating \hat(Y)
-	    	//yPredicted = estimateY(zPredicted, arg1Type, arg2Type);
+	    	// Together with previous step (computing \hat{Z}) --> finding Pr (Y, Z | T_i, x_i)
+	    	List<Counter<Integer>> ys = ComputeY_ZiTi();
+	    	
+	    	yPredicted = generateYPredicted(ys);
 	    }
 	    
 	    else if(ALGO_TYPE == 2) {
@@ -530,144 +556,15 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
     return false;
   }
 
-  /** Implements the edge cover problem in the conditional inference algorithm */
-  static class Edge {
-    int mention;
-    int y;
-    double score;
-    Edge(int m, int y, double s) {
-      this.mention = m;
-      this.y = y;
-      this.score = s;
-    }
-    public String toString() {
-      return "(" + mention + ", " + y + ", " + score + ")";
-    }
-  }
-
-  Map<Integer, List<Edge>> byY(List<Edge> edges) {
-    Map<Integer, List<Edge>> edgesByY = new HashMap<Integer, List<Edge>>();
-    for(Edge e: edges) {
-      if(e.y == nilIndex) continue;
-      List<Edge> yEdges = edgesByY.get(e.y);
-      if(yEdges == null) {
-        yEdges = new ArrayList<Edge>();
-        edgesByY.put(e.y, yEdges);
-      }
-      yEdges.add(e);
-    }
-    for(Integer y: edgesByY.keySet()) {
-      List<Edge> es = edgesByY.get(y);
-      Collections.sort(es, new Comparator<Edge>() {
-        @Override
-        public int compare(Edge o1, Edge o2) {
-          if(o1.score > o2.score) return -1;
-          else if(o1.score == o2.score) return 0;
-          return 1;
-        }
-      });
-    }
-    return edgesByY;
-  }
-
-  Map<Integer, List<Edge>> byZ(List<Edge> edges) {
-    Map<Integer, List<Edge>> edgesByZ = new HashMap<Integer, List<Edge>>();
-    for(Edge e: edges) {
-      List<Edge> mentionEdges = edgesByZ.get(e.mention);
-      if(mentionEdges == null) {
-        mentionEdges = new ArrayList<Edge>();
-        edgesByZ.put(e.mention, mentionEdges);
-      }
-      mentionEdges.add(e);
-    }
-    for(Integer m: edgesByZ.keySet()) {
-      List<Edge> es = edgesByZ.get(m);
-      Collections.sort(es, new Comparator<Edge>() {
-        @Override
-        public int compare(Edge o1, Edge o2) {
-          if(o1.score > o2.score) return -1;
-          else if(o1.score == o2.score) return 0;
-          return 1;
-        }
-      });
-    }
-    return edgesByZ;
-  }
-
-  /** The conditional inference from (Hoffmann et al., 2011) */
   /*
+   * Gibbs sampling of Z
    * TODO: This needs to be replaced by our inference code
    */
   private Set<Integer> [] generateZUpdate(
           Set<Integer> goldPos,
           List<Counter<Integer>> zs) {
     Set<Integer> [] zUpdate = ErasureUtils.uncheckedCast(new Set[zs.size()]);
-    for(int i = 0; i < zUpdate.length; i ++)
-      zUpdate[i] = new HashSet<Integer>();
 
-    // build all edges, for NIL + gold labels
-    List<Edge> edges = new ArrayList<Edge>();
-    for(int m = 0; m < zs.size(); m ++) {
-      for(Integer y: zs.get(m).keySet()) {
-        if(goldPos.contains(y) || y == nilIndex) {
-          double s = zs.get(m).getCount(y);
-          edges.add(new Edge(m, y, s));
-        }
-      }
-    }
-
-    // there are more Ys than mentions
-    if(goldPos.size() > zs.size()) {
-      // sort in descending order of scores
-      Collections.sort(edges, new Comparator<Edge>() {
-        @Override
-        public int compare(Edge o1, Edge o2) {
-          if(o1.score > o2.score) return -1;
-          else if(o1.score == o2.score) return 0;
-          return 1;
-        }
-      });
-
-      // traverse edges and cover as many Ys as possible
-      Set<Integer> coveredYs = new HashSet<Integer>();
-      for(Edge e: edges) {
-        if(e.y == nilIndex) continue;
-        if(! coveredYs.contains(e.y) && zUpdate[e.mention].size() == 0) {
-          zUpdate[e.mention].add(e.y);
-          coveredYs.add(e.y);
-        }
-      }
-
-      return zUpdate;
-    }
-
-    // there are more mentions than relations
-
-    // for each Y, pick the highest edge from an unmapped mention
-    Map<Integer, List<Edge>> edgesByY = byY(edges);
-    for(Integer y: goldPos) {
-      List<Edge> es = edgesByY.get(y);
-      assert(es != null);
-      for(Edge e: es) {
-        if(zUpdate[e.mention].size() == 0) {
-          zUpdate[e.mention].add(e.y);
-          break;
-        }
-      }
-    }
-
-    // map the leftover mentions to their highest scoring Y
-    Map<Integer, List<Edge>> edgesByZ = byZ(edges);
-    for(int m = 0; m < zUpdate.length; m ++) {
-      if(zUpdate[m].size() == 0) {
-        List<Edge> es = edgesByZ.get(m);
-        assert(es != null);
-        assert(es.size() > 0);
-        if(nilIndex != es.get(0).y) {
-          zUpdate[m].add(es.get(0).y);
-        }
-      }
-    }
 
     return zUpdate;
   }
@@ -841,3 +738,4 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   }
 
 }
+
