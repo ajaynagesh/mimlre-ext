@@ -372,7 +372,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  
   }
   
-  private void ComputePrYZT () {
+  private void ComputePrYZT (List<Counter<Integer>> pr_y, List<Counter<Integer>> pr_z, List<Counter<Integer>> pr_t) {
 	  
   }
   
@@ -411,26 +411,25 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  return yPredicted;
   }*/
   
-  List<Counter<Integer>> ComputeY_ZiTi(){
+  List<Counter<Integer>> ComputePrY_ZiTi(){
 	  List<Counter<Integer>> ys = new ArrayList<Counter<Integer>>();
 	  
 	  return ys;
   }
   
-  Counter<Integer> generateYPredicted(List<Counter<Integer>> ys) {
-	  Counter<Integer> yPredicted = new ClassicCounter<Integer>();
+  void generateYZPredicted(List<Counter<Integer>> ys, List<Counter<Integer>> zs, Counter<Integer> yPredicted, int [] zPredicted) {
+	  yPredicted = new ClassicCounter<Integer>();
 	  
-	  return yPredicted;
   }
   
-  private void trainJointly(
-		  int [][] crtGroup,
-          Set<Integer> goldPos,
-          Set<Integer> arg1Type,
-          Set<Integer> arg2Type,
-          Counter<Integer> posUpdateStats,
-          Counter<Integer> negUpdateStats, int diff) {
+  void generateYZTPredicted(List<Counter<Integer>> ys, List<Counter<Integer>> zs, List<Counter<Integer>> ts, 
+		  Counter<Integer> yPredicted, int [] zPredicted, int [] tPredicted) {
 	  
+  }
+  List<Counter<Integer>> ComputePrZ(int [][] crtGroup) {
+	  List<Counter<Integer>> prZs = new ArrayList<Counter<Integer>>();
+	  
+	  return prZs;
   }
   
   private void trainJointly(
@@ -440,48 +439,53 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
           Set<Integer> arg2Type,
           Counter<Integer> posUpdateStats,
           Counter<Integer> negUpdateStats) {
-	  	
-	  	// \hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
-	  	// 1st estimate Z and compute \hat{Z}
-	    List<Counter<Integer>> zs = estimateZ(crtGroup);
-	    // zPredicted -- generating \hat(Z)
-	    int [] zPredicted = generateZPredicted(zs);
-	    
-	    Counter<Integer> yPredicted = null;
-	    
-	    if(ALGO_TYPE == 1){
-	    	// yPredicted -- generating \hat(Y)
-	    	// Together with previous step (computing \hat{Z}) --> finding Pr (Y, Z | T_i, x_i)
-	    	List<Counter<Integer>> ys = ComputeY_ZiTi();
-	    	
-	    	yPredicted = generateYPredicted(ys);
-	    }
-	    
-	    else if(ALGO_TYPE == 2) {
-	    	int [] tPredicted = generateTPredicted();
-	    	// yPredicted -- generating \hat(Y)
-	    	//yPredicted = estimateY(zPredicted); // TODO: Need to figure out how this is is done
-	    }
-	    
-	    if(updateCondition(yPredicted.keySet(), goldPos)){
-	    	
-	    	Set<Integer> [] zUpdate;
-	    	Set<Integer> [] tUpdate;
-	    	
-	    	if(ALGO_TYPE == 1){
-	    		zUpdate = generateZUpdate(goldPos, zs);
-	    		// update weights
-		        updateZModel(zUpdate, zPredicted, crtGroup, posUpdateStats, negUpdateStats);
-	    	}
-	    	else if(ALGO_TYPE == 2){
-	    		zUpdate = generateZUpdate(goldPos, zs);
-	    		tUpdate = generateTUpdate(goldPos, zs);
-	        	// update weights
-		        updateZModel(zUpdate, zPredicted, crtGroup, posUpdateStats, negUpdateStats);
-	    	}
-	    }
-	    
+	  
+	  if(ALGO_TYPE == 1){
+		  // \hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
+		  // 1. estimate Pr(Z)
+		  List<Counter<Integer>> pr_z = ComputePrZ(crtGroup);
+		  // 2. estimate Pr(Y|Z,T)
+		  List<Counter<Integer>> pr_y = ComputePrY_ZiTi();
+		  
+		  Counter<Integer> yPredicted = null;
+		  int [] zPredicted = null;
+		  generateYZPredicted(pr_y, pr_z, yPredicted, zPredicted);
+		  
+		  Set<Integer> [] zUpdate;
+		  
+		  if(updateCondition(yPredicted.keySet(), goldPos)){
+			  
+			  zUpdate = generateZUpdate(goldPos, pr_z);
+			  updateZModel(zUpdate, zPredicted, crtGroup, posUpdateStats, negUpdateStats);
+		  }  
+	  }
+	  
+	  else if(ALGO_TYPE == 2){
+		  List<Counter<Integer>> pr_y = null;
+		  List<Counter<Integer>> pr_z = null;
+		  List<Counter<Integer>> pr_t = null;
+		  
+		  Counter<Integer> yPredicted = null;
+		  int [] zPredicted = null;
+		  int [] tPredicted = null;
+		  
+		  Set<Integer> [] zUpdate;
+		  Set<Integer> [] tUpdate;
+		  
+		  ComputePrYZT(pr_y, pr_z, pr_t);
+		  generateYZTPredicted(pr_y, pr_z, pr_t, yPredicted, zPredicted, tPredicted);
+		  
+		  if(updateCondition(yPredicted.keySet(), goldPos)){
+			  
+			  zUpdate = generateZUpdate(goldPos, pr_z);
+			  tUpdate = generateTUpdate(goldPos, pr_z);
+			  updateZModel(zUpdate, zPredicted, crtGroup, posUpdateStats, negUpdateStats);
+		  } 
+		  
+	  }
+	  
   }
+  
 
   Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
   {
