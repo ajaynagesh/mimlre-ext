@@ -125,8 +125,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   LabelWeights [] zWeights;
   
   /** Stores weight information for the entity types participating in the relation */
-  LabelWeights [] tWeights_arg1;
-  LabelWeights [] tWeights_arg2;
+  LabelWeights [] tWeights_arg1Bias;
+  LabelWeights [] tWeights_arg2Bias;
 
   Index<String> labelIndex;
   Index<String> zFeatureIndex;
@@ -174,9 +174,9 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	      zWeights[i] = new LabelWeights(dataset.featureIndex().size());
 
 	    // Weights for the entity types in a relation (one for each type of entity)
-	    tWeights_arg1 = new LabelWeights[dataset.argTypeIndex().size()];
-	    for(int i = 0; i < tWeights_arg1.length; i++) 
-	    	tWeights_arg1[i] = new LabelWeights(dataset.argFeatIndex().size());
+	    tWeights_arg1Bias = new LabelWeights[dataset.argTypeIndex().size()];
+	    for(int i = 0; i < tWeights_arg1Bias.length; i++) 
+	    	tWeights_arg1Bias[i] = new LabelWeights(dataset.argFeatIndex().size());
 	    
 	    // repeat for a number of epochs
 	    for(int t = 0; t < epochs; t ++){
@@ -411,15 +411,18 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  return yPredicted;
   }*/
   
-  List<Counter<Integer>> ComputePrY_ZiTi(int [] zPredicted, Set<Integer> arg1Type, Set<Integer> arg2Type){
+  List<Counter<Integer>> ComputePrY_ZiTi(int [] zPredicted, Set<Integer> arg1Type, 
+		  Set<Integer> arg2Type, Set<Integer> goldPos){
+	  
 	  List<Counter<Integer>> ys = new ArrayList<Counter<Integer>>();
 	  
 	  return ys;
   }
   
-  void generateYZPredicted(List<Counter<Integer>> ys, List<Counter<Integer>> zs, Counter<Integer> yPredicted, int [] zPredicted) {
-	  yPredicted = new ClassicCounter<Integer>();
+  Counter<Integer> generateYPredicted(List<Counter<Integer>> ys) {
+	  Counter<Integer> yPredicted = new ClassicCounter<Integer>();
 	  
+	  return yPredicted;
   }
   
   void generateYZTPredicted(List<Counter<Integer>> ys, List<Counter<Integer>> zs, List<Counter<Integer>> ts, 
@@ -449,11 +452,11 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 		  List<Counter<Integer>> pr_z = ComputePrZ(crtGroup);
 		  zPredicted = generateZPredicted(pr_z);
 		  // 2. estimate Pr(Y|Z,T)
-		  List<Counter<Integer>> pr_y = ComputePrY_ZiTi(zPredicted, arg1Type, arg2Type);
+		  List<Counter<Integer>> pr_y = ComputePrY_ZiTi(zPredicted, arg1Type, arg2Type, goldPos);
 		  
 		  Counter<Integer> yPredicted = null;
 		  
-		  generateYZPredicted(pr_y, pr_z, yPredicted, zPredicted);
+		  yPredicted = generateYPredicted(pr_y);
 		  
 		  Set<Integer> [] zUpdate;
 		  
