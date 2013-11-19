@@ -128,6 +128,9 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   LabelWeights [] tWeights_arg1Bias;
   LabelWeights [] tWeights_arg2Bias;
 
+  LabelWeights [] yWeights_select;
+  LabelWeights [] yWeights_mention;
+  
   Index<String> labelIndex;
   Index<String> zFeatureIndex;
   /** Index of the NIL label */
@@ -177,6 +180,19 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    tWeights_arg1Bias = new LabelWeights[dataset.argTypeIndex().size()];
 	    for(int i = 0; i < tWeights_arg1Bias.length; i++) 
 	    	tWeights_arg1Bias[i] = new LabelWeights(dataset.argFeatIndex().size());
+	    
+	    tWeights_arg2Bias = new LabelWeights[dataset.argTypeIndex().size()];
+	    for(int i = 0; i < tWeights_arg2Bias.length; i++) 
+	    	tWeights_arg2Bias[i] = new LabelWeights(dataset.argFeatIndex().size());
+	    
+	    int numTypes = dataset.argTypeIndex.size();
+	    yWeights_select = new LabelWeights[labelIndex.size()];
+	    for(int i = 0; i < yWeights_select.length; i++)
+	    	yWeights_select[i] = new LabelWeights(numTypes*numTypes+(2*numTypes));
+	    
+	    yWeights_mention = new LabelWeights[labelIndex.size()];
+	    for(int i = 0; i < yWeights_mention.length; i++)
+	    	yWeights_mention[i] = new LabelWeights(labelIndex.size());
 	    
 	    // repeat for a number of epochs
 	    for(int t = 0; t < epochs; t ++){
@@ -411,9 +427,34 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  return yPredicted;
   }*/
   
+  Counter<String> constructFeatureVector(Set<Integer> arg1Type, Set<Integer> arg2Type){
+	  Counter<String> yFeats_select = new ClassicCounter<String>();
+	  
+	  for(int type1 : arg1Type){
+		  for(int type2 : arg2Type){
+			  String type = "arg1=" + type1 + "_" + "arg2=" + type2;
+			  yFeats_select.incrementCount(type);
+		  }
+	  }
+	  
+	  for(int typ : arg1Type){
+		  String type = "arg1=" + typ;
+		  yFeats_select.incrementCount(type);
+	  }
+	  for(int typ : arg2Type){
+		  String type = "arg2=" + typ;
+		  yFeats_select.incrementCount(type);
+	  }
+		  
+	  
+	  return  yFeats_select;
+  }
+  
   List<Counter<Integer>> ComputePrY_ZiTi(int [] zPredicted, Set<Integer> arg1Type, 
 		  Set<Integer> arg2Type, Set<Integer> goldPos){
 	  
+	  Counter<String> yFeats_select = constructFeatureVector(arg1Type, arg2Type);
+	  yWeights_select[1].dotProduct(yFeats_select);
 	  List<Counter<Integer>> ys = new ArrayList<Counter<Integer>>();
 	  
 	  return ys;
