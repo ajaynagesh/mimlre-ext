@@ -304,6 +304,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
     for(int label = 0; label < zWeights.length; label ++){
       double score = zWeights[label].dotProduct(vector);
       scores.setCount(label, score);
+//      if (score > 0)
+//    	  System.out.println("====================================We have a non-zero score");
     }
 
     return scores;
@@ -485,6 +487,12 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  List<Counter<Integer>> prZs = estimateZ(crtGroup);
 	  
 	  for(Counter<Integer> pr_z : prZs){
+		  
+//		  System.out.println("Values before : ");
+//		  for(double score : pr_z.values())
+//			  System.out.print(score + " ");
+//		  System.out.println();
+		  
 		  double scoreTotal = 0.0;
 		  for(double score : pr_z.values())
 			  scoreTotal += Math.exp(score);
@@ -493,6 +501,12 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 			  double score = Math.exp(pr_z.getCount(z));
 			  pr_z.setCount(z, score/scoreTotal);
 		  }
+		  
+//		  System.out.println("Keyset Size " + pr_z.keySet().size());
+//		  System.out.println("Values after : ");
+//		  for(double score : pr_z.values())
+//			  System.out.print(score + " ");
+//		  System.out.println();
 			  
 	  }
 	  
@@ -514,7 +528,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  if(ALGO_TYPE == 1){
 		  // \hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
 		  // 1. estimate Pr(Z) .. for now estimating \hat{Z}
-		  List<Counter<Integer>> pr_z = ComputePrZ(crtGroup);
+		  List<Counter<Integer>> pr_z = estimateZ(crtGroup); // ComputePrZ(crtGroup);
+		  // TODO: Now calling the estimateZ function. Need to check if it has to be replaced by ComputePrZ
 		  zPredicted = generateZPredicted(pr_z);
 		  
 		  // 2. estimate Pr(Y|Z,T)
@@ -525,7 +540,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 		  
 		  if(updateCondition(yPredicted.keySet(), goldPos)){
 			  
-			  zUpdate = generateZUpdate(goldPos, pr_z);
+			  //zUpdate = generateZUpdate(goldPos, pr_z);
+			  zUpdate = generateZUpdate(goldPos, crtGroup);
 			  //updateZModel(zUpdate, zPredicted, crtGroup, posUpdateStats, negUpdateStats);
 		  }
 	  }
@@ -545,7 +561,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 		  
 		  if(updateCondition(yPredicted.keySet(), goldPos)){
 			  
-			  zUpdate = generateZUpdate(goldPos, pr_z);
+			  //zUpdate = generateZUpdate(goldPos, pr_z);
+			  zUpdate = generateZUpdate(goldPos, crtGroup);
 			  tUpdate = generateTUpdate(goldPos, pr_z);
 			  updateZModel(zUpdate, zPredicted, crtGroup, posUpdateStats, negUpdateStats);
 		  } 
@@ -632,10 +649,12 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
    * Gibbs sampling of Z
    * TODO: This needs to be replaced by our inference code
    */
-  private Set<Integer> [] generateZUpdate(
+  /*private Set<Integer> [] generateZUpdate(
           Set<Integer> goldPos,
-          List<Counter<Integer>> pr_z) {
-	  
+          List<Counter<Integer>> pr_z) {*/
+  	private Set<Integer> [] generateZUpdate(
+          Set<Integer> goldPos,
+          int [][] crtGroup) {  
 	  /**
 	   * while (not converged) {
 	   * 	choose a random permutation for Z variable Pi
@@ -644,15 +663,18 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	   * 	}
 	   * }
 	   */
+  	
+  	  List<Counter<Integer>> pr_z = ComputePrZ(crtGroup);
+  		
+	  Set<Integer> [] zUpdate = ErasureUtils.uncheckedCast(new Set[pr_z.size()]);
 	  
-	  Set<Integer> [] zUpdate = null; //ErasureUtils.uncheckedCast(new Set[zs.size()]);
-	  
-	  Counter<Integer> yLabels = new ClassicCounter<Integer>();
+	  Counter<Integer> yGoldLabels = new ClassicCounter<Integer>();
 	  for(int y : goldPos){
-		  yLabels.incrementCount(y);
+		  yGoldLabels.incrementCount(y);
 	  }
 	  
-	  
+	  for(int i = 0; i < yWeights_mention.length; i++)
+		  yWeights_mention[i].dotProduct(yGoldLabels);
 	  
 	  for(int i = 0; i < epochsInf; i++){
 		  
