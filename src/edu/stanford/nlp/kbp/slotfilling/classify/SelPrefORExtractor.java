@@ -123,11 +123,11 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   LabelWeights [] zWeights;
   
   /** Stores weight information for the entity types participating in the relation */
-  LabelWeights [] tWeights_arg1Bias;
-  LabelWeights [] tWeights_arg2Bias;
+  LabelWeights [] arg1biasFweights;
+  LabelWeights [] arg2biasFweights;
 
-  LabelWeights [] yWeights_select;
-  LabelWeights [] yWeights_mention;
+  LabelWeights [] selectFweights;
+  LabelWeights [] mentionFweights;
   
   Index<String> labelIndex;
   Index<String> zFeatureIndex;
@@ -136,7 +136,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   /** Number of epochs during training */
   final int epochs;
   
-  int epochsInf;
+  int epochsInf = 1000;
 
   public SelPrefORExtractor(int epochs) {
     this.epochs = epochs;
@@ -175,22 +175,23 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	      zWeights[i] = new LabelWeights(dataset.featureIndex().size());
 
 	    // Weights for the entity types in a relation (one for each type of entity)
-	    tWeights_arg1Bias = new LabelWeights[dataset.argTypeIndex().size()];
-	    for(int i = 0; i < tWeights_arg1Bias.length; i++) 
-	    	tWeights_arg1Bias[i] = new LabelWeights(dataset.argFeatIndex().size());
+	    arg1biasFweights = new LabelWeights[dataset.argTypeIndex().size()];
+	    for(int i = 0; i < arg1biasFweights.length; i++) 
+	    	arg1biasFweights[i] = new LabelWeights(dataset.argFeatIndex().size());
 	    
-	    tWeights_arg2Bias = new LabelWeights[dataset.argTypeIndex().size()];
-	    for(int i = 0; i < tWeights_arg2Bias.length; i++) 
-	    	tWeights_arg2Bias[i] = new LabelWeights(dataset.argFeatIndex().size());
+	    arg2biasFweights = new LabelWeights[dataset.argTypeIndex().size()];
+	    for(int i = 0; i < arg2biasFweights.length; i++) 
+	    	arg2biasFweights[i] = new LabelWeights(dataset.argFeatIndex().size());
 	    
 	    int numTypes = dataset.argTypeIndex.size();
-	    yWeights_select = new LabelWeights[labelIndex.size()];
-	    for(int i = 0; i < yWeights_select.length; i++)
-	    	yWeights_select[i] = new LabelWeights(numTypes*numTypes+(2*numTypes));
+	    selectFweights = new LabelWeights[labelIndex.size()];
+	    for(int i = 0; i < selectFweights.length; i++)
+	    	selectFweights[i] = new LabelWeights(numTypes*numTypes+(2*numTypes));
 	    
-	    yWeights_mention = new LabelWeights[labelIndex.size()];
-	    for(int i = 0; i < yWeights_mention.length; i++)
-	    	yWeights_mention[i] = new LabelWeights(labelIndex.size());
+	    mentionFweights = new LabelWeights[labelIndex.size()];
+	    for(int j = 0; j < mentionFweights.length; j++){
+	    	mentionFweights[j] = new LabelWeights (labelIndex.size()*(labelIndex.size()-1));		    
+	    }
 	    
 	    // repeat for a number of epochs
 	    for(int t = 0; t < epochs; t ++){
@@ -211,7 +212,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    		Set<Integer> arg1Type = dataset.arg1TypeArray()[i];
 	    		Set<Integer> arg2Type = dataset.arg2TypeArray()[i];
 
-	    		trainJointly(crtGroup, goldPos, arg1Type, arg2Type, posUpdateStats, negUpdateStats, labelIndex);
+	    		trainJointly(crtGroup, goldPos, arg1Type, arg2Type, posUpdateStats, negUpdateStats, labelIndex, i);
 
 	    		// update the number of iterations an weight vector has survived
 	    		for(LabelWeights zw: zWeights) zw.updateSurvivalIterations();
@@ -292,6 +293,16 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  Log.severe("--------------Running the new algo ---- One small step for man .... :-) ");
 	  Log.severe("Using run id: " + props.getProperty(Props.RUN_ID) + " in working directory " + props.getProperty(Props.WORK_DIR));
 
+//	  int abc[] = {1,2,3,4,5,6,7,8,9};
+//	  ArrayList<Integer> abcList = new ArrayList<Integer>();
+//	  for(int a : abc){
+//		  abcList.add(a);
+//	  }
+//	  System.out.println(abcList);
+//	  Collections.shuffle(abcList);
+//	  System.out.println(abcList);
+//	  System.exit(0);
+	  
 	  train(props);
 
   }  
@@ -380,10 +391,14 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   }*/
   
   // TODO: Need to implement the randomization routine
-  private Counter<Integer> randomizeVar(){
-	  Counter<Integer> rVar = new ClassicCounter<Integer>();
+  private ArrayList<Integer> randomizeVar(int sz){
 	  
-	  return rVar;
+	  ArrayList<Integer> randomArray = new ArrayList<Integer>();
+	  for(int i = 0; i < sz; i ++)
+		  randomArray.add(i);
+	  Collections.shuffle(randomArray);
+
+	  return randomArray;
   }
   
   /*private int [] gibbsSampler(int [] zPredicted){
@@ -431,6 +446,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  return  yFeats_select;
   }
   
+  // TODO: This function needs relooking in light of new mentionFeatureVector
   Counter<Integer> ComputePrY_ZiTi(int [] zPredicted, Set<Integer> arg1Type, 
 		  Set<Integer> arg2Type, Set<Integer> goldPos, Index<String> yLabels){
 	  
@@ -446,9 +462,9 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  double totalScore = 0.0;
 	  for(String label : yLabels){
 		  int indx = yLabels.indexOf(label);
-		  double score = yWeights_select[indx].dotProduct(yFeats_select);
+		  double score = selectFweights[indx].dotProduct(yFeats_select);
 		  
-		  score += yWeights_mention[indx].dotProduct(yFeats_mention);
+		  score += mentionFweights[indx].dotProduct(yFeats_mention);
 		  
 		  score = Math.exp(score);
 //		  System.out.println("score : " + score);
@@ -520,7 +536,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
           Set<Integer> arg2Type,
           Counter<Integer> posUpdateStats,
           Counter<Integer> negUpdateStats,
-          Index<String> yLabels) {
+          Index<String> yLabels,
+          int egId) {
 	  
 	  int [] zPredicted = null;
 	  int [] tPredicted = null;
@@ -644,6 +661,40 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 
     return false;
   }
+  
+  Counter<Integer> createVector(Set<Integer> setRepresentation){ 
+	  Counter<Integer> vector = new ClassicCounter<Integer>();
+
+	  for(int y : setRepresentation){
+		  vector.incrementCount(y);
+	  }
+	  
+	  return vector;
+  }
+  
+  Counter<Integer> createMentionFeatureVector(Set<Integer> goldPos, int [] zPredicted, int currentZindx){
+	  
+	  Counter<Integer> mentionFeatureVector = new ClassicCounter<Integer>();
+	  Counter<Integer> yGoldLabelsVector = createVector(goldPos);
+	  
+	  // add the NIL label
+	  mentionFeatureVector.incrementCount(0);
+	  
+	  for(int label : yGoldLabelsVector.keySet()){
+		  for(int j = 0; j < zPredicted.length; j ++){
+			  if(j == currentZindx)
+				  continue;
+			  
+			  int z = zPredicted[j];
+			  if(z != nilIndex){
+				 int key = label * 10 + z; 
+				 mentionFeatureVector.incrementCount(key); 
+			  }
+		  }
+	  }
+	  
+	  return mentionFeatureVector;
+  }
 
   /*
    * Gibbs sampling of Z
@@ -665,22 +716,54 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	   */
   	
   	  List<Counter<Integer>> pr_z = ComputePrZ(crtGroup);
+  	  int zPredicted [] = generateZPredicted(pr_z);
   		
 	  Set<Integer> [] zUpdate = ErasureUtils.uncheckedCast(new Set[pr_z.size()]);
 	  
-	  Counter<Integer> yGoldLabels = new ClassicCounter<Integer>();
-	  for(int y : goldPos){
-		  yGoldLabels.incrementCount(y);
-	  }
+	  Counter<Integer> zScores = new ClassicCounter<Integer>();
 	  
-	  for(int i = 0; i < yWeights_mention.length; i++)
-		  yWeights_mention[i].dotProduct(yGoldLabels);
-	  
-	  for(int i = 0; i < epochsInf; i++){
+	  for(int i = 0; i < epochsInf; i ++){
 		  
+		  ArrayList<Integer> randomArray = randomizeVar(pr_z.size()); 
+		  
+		  for(int j = 0; j < zUpdate.length; j ++){
+
+			  int zVar = randomArray.get(j);
+			  Counter<Integer> mentionFeatureVector = createMentionFeatureVector(goldPos, zPredicted, zVar);
+			  
+			  for(int label = 0; label < mentionFweights.length; label ++){
+				  double score = mentionFweights[label].dotProduct(mentionFeatureVector);
+				  
+				  zScores.setCount(label, score);
+			  }
+			  
+			  zUpdate[zVar] = selectBestZ(zScores);
+		  }
 	  }
 
 	  return zUpdate;
+  }
+  	
+  Set<Integer> selectBestZ(Counter<Integer> zScores){
+	  Set<Integer> bestZ = new HashSet<Integer>();
+	  
+	  double maxScore = Double.MIN_VALUE;
+	  int maxZ = -1;
+	  for(int z : zScores.keySet()){
+		  double value = zScores.getCount(z);
+		  
+		  if(value > maxScore){
+			  maxScore = value;
+			  maxZ = z;
+		  }
+	  }
+	  
+	  if(maxZ != -1)
+		  bestZ.add(maxZ);
+	  else
+		  System.out.println("------------------ERROR no max in Z!! -------------------");
+	  
+	  return bestZ;
   }
 
   /**
