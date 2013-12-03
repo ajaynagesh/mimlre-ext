@@ -1,5 +1,6 @@
 package edu.stanford.nlp.kbp.slotfilling.classify;
 
+import edu.stanford.nlp.classify.Dataset;
 import edu.stanford.nlp.ie.machinereading.structure.RelationMention;
 import edu.stanford.nlp.kbp.slotfilling.KBPTrainer;
 import edu.stanford.nlp.kbp.slotfilling.common.Constants;
@@ -126,11 +127,17 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   LabelWeights [] arg1biasFweights;
   LabelWeights [] arg2biasFweights;
 
-  LabelWeights [] selectFweights;
-  LabelWeights [] mentionFweights;
+  LabelWeights selectFweights;  // Shared selectFweights vector for all the select factors
+  LabelWeights mentionFweights; // Shared mentionFweights vector for all the mention factors
+  
+  //double eta;
+  double getEta(int epoch){
+	  return (1.0/epoch);
+  }
   
   Index<String> labelIndex;
   Index<String> zFeatureIndex;
+  Index<String> argTypeIndex;
   /** Index of the NIL label */
   int nilIndex;
   /** Number of epochs during training */
@@ -169,8 +176,11 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    labelIndex.add(RelationMention.UNRELATED);
 	    nilIndex = labelIndex.indexOf(RelationMention.UNRELATED);
 	    zFeatureIndex = dataset.featureIndex();
+	    argTypeIndex = dataset.argTypeIndex();
 
-	    zWeights = new LabelWeights[labelIndex.size()];
+	    int numOfLabels = labelIndex.size();
+	    
+	    zWeights = new LabelWeights[numOfLabels];
 	    for(int i = 0; i < zWeights.length; i ++)
 	      zWeights[i] = new LabelWeights(dataset.featureIndex().size());
 
@@ -183,15 +193,10 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    for(int i = 0; i < arg2biasFweights.length; i++) 
 	    	arg2biasFweights[i] = new LabelWeights(dataset.argFeatIndex().size());
 	    
-	    int numTypes = dataset.argTypeIndex.size();
-	    selectFweights = new LabelWeights[labelIndex.size()];
-	    for(int i = 0; i < selectFweights.length; i++)
-	    	selectFweights[i] = new LabelWeights(numTypes*numTypes+(2*numTypes));
+	    int numOfTypes = dataset.argTypeIndex.size();
+	    selectFweights = new LabelWeights(numOfTypes*numOfTypes*numOfLabels+(2*numOfTypes*numOfLabels));
 	    
-	    mentionFweights = new LabelWeights[labelIndex.size()];
-	    for(int j = 0; j < mentionFweights.length; j++){
-	    	mentionFweights[j] = new LabelWeights (labelIndex.size()*(labelIndex.size()-1));		    
-	    }
+	    mentionFweights = new LabelWeights (numOfLabels*numOfLabels);
 	    
 	    // repeat for a number of epochs
 	    for(int t = 0; t < epochs; t ++){
@@ -212,7 +217,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    		Set<Integer> arg1Type = dataset.arg1TypeArray()[i];
 	    		Set<Integer> arg2Type = dataset.arg2TypeArray()[i];
 
-	    		trainJointly(crtGroup, goldPos, arg1Type, arg2Type, posUpdateStats, negUpdateStats, labelIndex, i);
+	    		trainJointly(crtGroup, goldPos, arg1Type, arg2Type, posUpdateStats, negUpdateStats, labelIndex, i, t);
 
 	    		// update the number of iterations an weight vector has survived
 	    		for(LabelWeights zw: zWeights) zw.updateSurvivalIterations();
@@ -425,25 +430,33 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  return yPredicted;
   }*/
   
-  Counter<Integer> constructArgFeatureVector(Set<Integer> arg1Type, Set<Integer> arg2Type){
+  Counter<Integer> createSelectFeatureVector(Set<Integer> arg1Type, Set<Integer> arg2Type, Set<Integer> relLabel){
 	  Counter<Integer> yFeats_select = new ClassicCounter<Integer>();
 	  
-	  for(int type2 : arg2Type){
-		  for(int type1 : arg1Type){
-			  int type = type2*10 + type1;
-			  yFeats_select.incrementCount(type);
+	  for(int label : relLabel){
+		  for(int type2 : arg2Type){
+			  for(int type1 : arg1Type){
+				  //int key = label*100 + type2*10 + type1;
+				  int key = label + (type1 * labelIndex.size()) + (type2 * labelIndex.size() * argTypeIndex.size());
+				  yFeats_select.incrementCount(key);
+			  }
 		  }
 	  }
 	  
-	  for(int typ : arg1Type){
-		  yFeats_select.incrementCount(typ);
+	  for(int label : relLabel){
+		  for(int typ : arg1Type){
+			  int key = label + (typ * labelIndex.size());
+			  yFeats_select.incrementCount(key);
+		  }
+		  for(int typ : arg2Type){
+			  int key = label + (typ * labelIndex.size()); // TODO: to check if this is fine. Should we treat arg1type and arg2type as different ?
+			  yFeats_select.incrementCount(key);
+		  }  
 	  }
-	  for(int typ : arg2Type){
-		  yFeats_select.incrementCount(typ);
-	  }
-		  
 	  
 	  return  yFeats_select;
+	  
+	  //TODO: check if the feature index mapping is unique with some examples
   }
   
   // TODO: This function needs relooking in light of new mentionFeatureVector
@@ -452,19 +465,23 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  
 	  Counter<Integer> ys = new ClassicCounter<Integer>();
 	  
-	  Counter<Integer> yFeats_select = constructArgFeatureVector(arg1Type, arg2Type);
+	  Counter<Integer> yFeats_select = createSelectFeatureVector(arg1Type, arg2Type, goldPos);
 	  
-	  Counter<Integer> yFeats_mention = new ClassicCounter<Integer>();
-	  for(int z : zPredicted){
-		  yFeats_mention.incrementCount(z);
-	  }
+	  //Counter<Integer> yFeats_mention = createMentionFeatureVector(goldPos, zPredicted, -1, -1);
+//			  new ClassicCounter<Integer>();
+//	  for(int z : zPredicted){
+//		  yFeats_mention.incrementCount(z);
+//	  }
 	  
 	  double totalScore = 0.0;
 	  for(String label : yLabels){
 		  int indx = yLabels.indexOf(label);
-		  double score = selectFweights[indx].dotProduct(yFeats_select);
 		  
-		  score += mentionFweights[indx].dotProduct(yFeats_mention);
+		  Counter<Integer> yFeats_mention = createMentionFeatureVector(goldPos, zPredicted, -1, -1, true, indx);
+		  
+		  double score = selectFweights.dotProduct(yFeats_select);
+		  
+		  score += mentionFweights.dotProduct(yFeats_mention);
 		  
 		  score = Math.exp(score);
 //		  System.out.println("score : " + score);
@@ -537,7 +554,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
           Counter<Integer> posUpdateStats,
           Counter<Integer> negUpdateStats,
           Index<String> yLabels,
-          int egId) {
+          int egId,
+          int epoch) {
 	  
 	  int [] zPredicted = null;
 	  int [] tPredicted = null;
@@ -559,7 +577,9 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 			  
 			  //zUpdate = generateZUpdate(goldPos, pr_z);
 			  zUpdate = generateZUpdate(goldPos, crtGroup);
-			  //updateZModel(zUpdate, zPredicted, crtGroup, posUpdateStats, negUpdateStats);
+			  updateZModel(zUpdate, zPredicted, crtGroup, epoch, posUpdateStats, negUpdateStats);
+			  updateMentionWeights(zUpdate, zPredicted, goldPos, yPredicted, epoch, posUpdateStats, negUpdateStats);
+			  updateSelectWeights(goldPos, yPredicted, arg1Type, arg2Type, epoch, posUpdateStats, negUpdateStats);
 		  }
 	  }
 	  
@@ -581,15 +601,75 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 			  //zUpdate = generateZUpdate(goldPos, pr_z);
 			  zUpdate = generateZUpdate(goldPos, crtGroup);
 			  tUpdate = generateTUpdate(goldPos, pr_z);
-			  updateZModel(zUpdate, zPredicted, crtGroup, posUpdateStats, negUpdateStats);
+			  updateZModel(zUpdate, zPredicted, crtGroup, epoch, posUpdateStats, negUpdateStats);
 		  } 
 		  
 	  }
 	  
   }
   
+  private void updateSelectWeights(Set<Integer> goldPos,
+		Counter<Integer> yPredicted, Set<Integer> arg1Type,
+		Set<Integer> arg2Type, int epoch, Counter<Integer> posUpdateStats,
+		Counter<Integer> negUpdateStats) {
+	  
+	  Counter<Integer> selectFeatsToAdd = createSelectFeatureVector(arg1Type, arg2Type, goldPos);
+	  
+	  Set<Integer> yPredictedSet = new HashSet<Integer>();
+	  for(int yPred : yPredicted.keySet())
+		  yPredictedSet.add(yPred);
+	  Counter<Integer> selectFeatsToSub = createSelectFeatureVector(arg1Type, arg2Type, yPredictedSet);
+	  
+	  // TODO: check this
+	  for (int feature : selectFeatsToAdd.keySet()){
+		  selectFweights.weights[feature] += getEta(epoch);
+	  }
 
-  Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
+	  for (int feature : selectFeatsToSub.keySet()){
+		  selectFweights.weights[feature] -= getEta(epoch);
+	  }
+	
+}
+  
+private void updateMentionWeights(Set<Integer>[] zUpdate, int[] zPredicted,
+		Set<Integer> goldPos, Counter<Integer> yPredicted, int epoch,
+		Counter<Integer> posUpdateStats, Counter<Integer> negUpdateStats) {
+	
+	int [] zUpdateArray = new int[zUpdate.length];
+	for(int i = 0; i < zUpdate.length; i++){
+		Set<Integer> z = zUpdate[i];
+		if(z.size() > 1)
+			System.out.println("---------------Ajay: more than 1 zUpdate---------------------");
+		else{
+			Iterator<Integer> zIterator = z.iterator();
+			zUpdateArray[i] = zIterator.next();
+ 		}		
+	}
+	Counter<Integer> mentionFVtoadd = createMentionFeatureVector(goldPos, zUpdateArray, -1, -1, false, -1);
+	
+	
+	Set<Integer> yPredictedSet = new HashSet<Integer>();
+	for(int y : yPredicted.keySet()){
+		yPredictedSet.add(y);
+	}
+		
+	Counter<Integer> mentionFVtosub = createMentionFeatureVector(yPredictedSet, zPredicted, -1, -1, false, -1);
+	
+
+	// TODO: Check this  
+	for (int feature : mentionFVtoadd.keySet()){
+		mentionFweights.weights[feature] += getEta(epoch);
+	}
+
+	for (int feature : mentionFVtosub.keySet()){
+		mentionFweights.weights[feature] -= getEta(epoch);
+	}
+	
+	//TODO: To use posUpdateStats and negUpdateStats
+	
+}
+  
+Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
   {
 	  Set<Integer> [] tUpdate = null;
 	  
@@ -607,6 +687,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
           Set<Integer> [] goldZ,
           int [] predictedZ,
           int [][] group,
+          int epoch,
           Counter<Integer> posUpdateStats,
           Counter<Integer> negUpdateStats) {
     assert(goldZ.length == group.length);
@@ -622,21 +703,22 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 
       // negative update
       if(pred != nilIndex && ! gold.contains(pred)) {
-        zWeights[pred].update(datum, -1.0);
+        //zWeights[pred].update(datum, -1.0);
+        zWeights[pred].update(datum, -getEta(epoch)); // changing the learning rate
         negUpdateStats.incrementCount(pred);
         negUpdateStats.incrementCount(LABEL_ALL);
       }
 
       // negative update for NIL
       if(pred == nilIndex && gold.size() != 0){
-        zWeights[nilIndex].update(datum, -1.0);
+        zWeights[nilIndex].update(datum, -getEta(epoch)); // changing the learning rate
         negUpdateStats.incrementCount(pred);
       }
 
       // positive update(s)
       for(int l: gold) {
         if(l != nilIndex && l != pred) {
-          zWeights[l].update(datum, +1.0);
+          zWeights[l].update(datum, +getEta(epoch)); // changing the learning rate
           posUpdateStats.incrementCount(l);
           posUpdateStats.incrementCount(LABEL_ALL);
         }
@@ -644,7 +726,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 
       // positive update for NIL
       if(gold.size() == 0 && pred != nilIndex){
-        zWeights[nilIndex].update(datum, +1.0);
+        zWeights[nilIndex].update(datum, +getEta(epoch)); // changing the learning rate
         posUpdateStats.incrementCount(nilIndex);
       }
     }
@@ -672,23 +754,26 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  return vector;
   }
   
-  Counter<Integer> createMentionFeatureVector(Set<Integer> goldPos, int [] zPredicted, int currentZindx){
+  Counter<Integer> createMentionFeatureVector(Set<Integer> yVars, int [] zPredicted, int zVar, int zLabel, Boolean singleYlabel, int ylabel){
 	  
 	  Counter<Integer> mentionFeatureVector = new ClassicCounter<Integer>();
-	  Counter<Integer> yGoldLabelsVector = createVector(goldPos);
+	  Counter<Integer> yVarsVector = createVector(yVars);
 	  
-	  // add the NIL label
-	  mentionFeatureVector.incrementCount(0);
+	  // add the NIL label TODO: Check if this is to be added
+	  //mentionFeatureVector.incrementCount(0);
 	  
-	  for(int label : yGoldLabelsVector.keySet()){
+	  for(int yLabel : yVarsVector.keySet()){
 		  for(int j = 0; j < zPredicted.length; j ++){
-			  if(j == currentZindx)
-				  continue;
 			  
 			  int z = zPredicted[j];
-			  if(z != nilIndex){
-				 int key = label * 10 + z; 
-				 mentionFeatureVector.incrementCount(key); 
+			  
+			  if(z == zVar){
+				  int key = (yLabel * labelIndex.size()) + zLabel; // add the zLabel for this zVar instead of zLabel
+				  mentionFeatureVector.incrementCount(key);
+			  }
+			  else{
+				  int key = (yLabel * labelIndex.size()) + z;
+				  mentionFeatureVector.incrementCount(key);
 			  }
 		  }
 	  }
@@ -714,6 +799,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	   * 	}
 	   * }
 	   */
+  		
+  		//TODO: To also add the extract factors in the computation below
   	
   	  List<Counter<Integer>> pr_z = ComputePrZ(crtGroup);
   	  int zPredicted [] = generateZPredicted(pr_z);
@@ -729,12 +816,13 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 		  for(int j = 0; j < zUpdate.length; j ++){
 
 			  int zVar = randomArray.get(j);
-			  Counter<Integer> mentionFeatureVector = createMentionFeatureVector(goldPos, zPredicted, zVar);
 			  
-			  for(int label = 0; label < mentionFweights.length; label ++){
-				  double score = mentionFweights[label].dotProduct(mentionFeatureVector);
+			  for(int zLabel = 0; zLabel < labelIndex.size(); zLabel ++){
+				//TODO: check for correctness ... Need to include label info ... else we are computing the same value for all labels ...
+				  Counter<Integer> mentionFeatureVector = createMentionFeatureVector(goldPos, zPredicted, zVar, zLabel, false, -1); 
+				  double score = mentionFweights.dotProduct(mentionFeatureVector);
 				  
-				  zScores.setCount(label, score);
+				  zScores.setCount(zLabel, score);
 			  }
 			  
 			  zUpdate[zVar] = selectBestZ(zScores);
