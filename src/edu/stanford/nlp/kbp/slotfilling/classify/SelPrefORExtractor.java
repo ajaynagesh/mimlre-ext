@@ -28,6 +28,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   private static final long serialVersionUID = 1L;
   private static final int LABEL_ALL = -1;
 
+  //TODO: need to add this in the param file
   private static int ALGO_TYPE = 1; // 1 - for test type 1 , 2 - for test type 2 (cf. write-up,notes on google doc)
   
   /**
@@ -143,14 +144,14 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   /** Number of epochs during training */
   final int epochs;
   
-  int epochsInf = 1000;
+  int epochsInf = 10;
 
   public SelPrefORExtractor(int epochs) {
     this.epochs = epochs;
   }
   public SelPrefORExtractor(Properties props) {
     Log.severe("SelPrefORExtractor configured with the following properties:");
-    this.epochs = PropertiesUtils.getInt(props, Props.PERCEPTRON_EPOCHS, 10); // TODO: To add relevant information to our training algorithm
+    this.epochs = PropertiesUtils.getInt(props, Props.PERCEPTRON_EPOCHS, 10);
     Log.severe("epochs = " + epochs);
   }
 
@@ -184,22 +185,25 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    for(int i = 0; i < zWeights.length; i ++)
 	      zWeights[i] = new LabelWeights(dataset.featureIndex().size());
 
-	    // Weights for the entity types in a relation (one for each type of entity)
-	    arg1biasFweights = new LabelWeights[dataset.argTypeIndex().size()];
-	    for(int i = 0; i < arg1biasFweights.length; i++) 
-	    	arg1biasFweights[i] = new LabelWeights(dataset.argFeatIndex().size());
-	    
-	    arg2biasFweights = new LabelWeights[dataset.argTypeIndex().size()];
-	    for(int i = 0; i < arg2biasFweights.length; i++) 
-	    	arg2biasFweights[i] = new LabelWeights(dataset.argFeatIndex().size());
-	    
 	    int numOfTypes = dataset.argTypeIndex.size();
 	    selectFweights = new LabelWeights(numOfTypes*numOfTypes*numOfLabels+(2*numOfTypes*numOfLabels));
 	    
 	    mentionFweights = new LabelWeights (numOfLabels*numOfLabels);
-	    
+
+	    // Weights for the entity types in a relation (one for each type of entity)
+//	    arg1biasFweights = new LabelWeights[dataset.argTypeIndex().size()];
+//	    for(int i = 0; i < arg1biasFweights.length; i++) 
+//	    	arg1biasFweights[i] = new LabelWeights(dataset.argFeatIndex().size());
+//	    
+//	    arg2biasFweights = new LabelWeights[dataset.argTypeIndex().size()];
+//	    for(int i = 0; i < arg2biasFweights.length; i++) 
+//	    	arg2biasFweights[i] = new LabelWeights(dataset.argFeatIndex().size());
+
+	    /**
+	     * Training algorithm starts here
+	     */
 	    // repeat for a number of epochs
-	    for(int t = 0; t < epochs; t ++){
+	    for(int t = 1; t <= epochs; t ++){
 	    	// randomize the data set in each epoch
 	    	// use a fixed seed for replicability
 	    	Log.severe("Started epoch #" + t + "...");
@@ -217,7 +221,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    		Set<Integer> arg1Type = dataset.arg1TypeArray()[i];
 	    		Set<Integer> arg2Type = dataset.arg2TypeArray()[i];
 
-	    		trainJointly(crtGroup, goldPos, arg1Type, arg2Type, posUpdateStats, negUpdateStats, labelIndex, i, t);
+	    		trainJointly(crtGroup, goldPos, arg1Type, arg2Type, posUpdateStats, negUpdateStats, i, t);
 
 	    		// update the number of iterations an weight vector has survived
 	    		for(LabelWeights zw: zWeights) zw.updateSurvivalIterations();
@@ -291,6 +295,51 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  }
   }
   
+  static void testRandomArrayGen(){
+	  int abc[] = {1,2,3,4,5,6,7,8,9};
+	  ArrayList<Integer> abcList = new ArrayList<Integer>();
+	  for(int a : abc){
+		  abcList.add(a);
+	  }
+	  System.out.println(abcList);
+	  Collections.shuffle(abcList);
+	  System.out.println(abcList);
+	  Collections.shuffle(abcList);
+	  System.out.println(abcList);
+	  Collections.shuffle(abcList);
+	  System.out.println(abcList);
+	  Collections.shuffle(abcList);
+	  System.out.println(abcList);
+	  Collections.shuffle(abcList);
+	  System.out.println(abcList);
+	  Collections.shuffle(abcList);
+	  System.out.println(abcList);
+	  Collections.shuffle(abcList);
+	  System.out.println(abcList);
+	  Collections.shuffle(abcList);
+	  System.out.println(abcList);
+	  Collections.shuffle(abcList);
+	  System.out.println(abcList);
+	  Collections.shuffle(abcList);
+	  System.out.println(abcList);
+	  Collections.shuffle(abcList);
+	  System.out.println(abcList);
+	  Collections.shuffle(abcList);
+	  System.out.println(abcList);
+	  Collections.shuffle(abcList);
+	  System.out.println(abcList);
+	  
+	  SelPrefORExtractor s = new SelPrefORExtractor(0);
+	  double eta = -s.getEta(10);
+	  System.out.println(eta);
+	  System.out.println(+s.getEta(10));
+	  
+	  System.out.println(Math.exp(1023));
+	  System.out.println(Double.MAX_EXPONENT);
+	  
+	  System.exit(0);
+  }
+  
   public static void main(String[] args) throws Exception{
 
 	  Properties props = StringUtils.argsToProperties(args);
@@ -298,15 +347,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  Log.severe("--------------Running the new algo ---- One small step for man .... :-) ");
 	  Log.severe("Using run id: " + props.getProperty(Props.RUN_ID) + " in working directory " + props.getProperty(Props.WORK_DIR));
 
-//	  int abc[] = {1,2,3,4,5,6,7,8,9};
-//	  ArrayList<Integer> abcList = new ArrayList<Integer>();
-//	  for(int a : abc){
-//		  abcList.add(a);
-//	  }
-//	  System.out.println(abcList);
-//	  Collections.shuffle(abcList);
-//	  System.out.println(abcList);
-//	  System.exit(0);
+	  //testRandomArrayGen();
 	  
 	  train(props);
 
@@ -326,76 +367,21 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 
     return scores;
   }
-  /**
-   * New estimateZ function which computes the factors given Yi
-   * @param datum
-   * @param Yi
-   * @return
-   */
-  /*private Counter<Integer> estimateZ(int [] datum, Set<Integer> Yi) {
+  
+  private double estimateZ(int [] datum, int label) {
 	    Counter<Integer> vector = new ClassicCounter<Integer>();
-	    for(int d: datum) vector.incrementCount(d);
+	    for(int d: datum) 
+	    	vector.incrementCount(d);
 	    
-	    Counter<Integer> Yvector = new ClassicCounter<Integer>();
-	    for(int y : Yi) vector.incrementCount(y);
-
-	    Counter<Integer> scores = new ClassicCounter<Integer>();
-	    
-	    for(int label = 0; label < zWeights.length; label ++){
-	      double score = zWeights[label].dotProduct(vector);
-	      score += zWeights[label].dotProduct(Yvector); // note the addition to the score
-	      scores.setCount(label, score);
-	    }
-
-	    return scores;
-	  }*/
-  
-  /*private List<Counter<Integer>> ComputePrZ_Yi (int [][] datums, Set<Integer> Yi) {
-	  List<Counter<Integer>> zs = new ArrayList<Counter<Integer>>();
-	  
-	  for(int [] datum: datums) {
-	      zs.add(estimateZ(datum, Yi));
+	    double score = zWeights[label].dotProduct(vector);
+	      
+	    return score;
 	  }
-	  
-	  return zs;
-  }*/
-  
-//\hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
- /* private void ComputePrYZ_Ti (int [][] datums, int szY, Set<Integer> arg1Type, Set<Integer> arg2Type) {
-	  Set<Integer> yPredicted = null; //  TODO: Initialize yPredicted. How ? 
-	  
-	  for (int i = 0; i < epochsInf; i ++){ // TODO: What is the stopping criterion
-		  
-		  // update Z assuming Y fixed 
-		  List<Counter<Integer>> zs = ComputePrZ_Yi(datums, yPredicted);
-		  int [] zPredicted = generateZPredicted(zs);
-		  
-		  // update Y assuming Z fixed (to zPredicted)
-		  for (int j = 0; j < epochsInf; j++){ // TODO: What is the stopping criterion
-			  Counter<Integer> randomizedY = randomizeVar();
-			  
-			  for(int k = 0; k < szY; k ++){
-				  Counter<Integer> y = estimateY(zPredicted, szY, arg1Type, arg2Type);
-				  
-			  }
-		  }
-		  
-	  }
-  }*/
-  
-  /*private void ComputePrZT_Yi () {
-	  
-  }*/
   
   private void ComputePrYZT (List<Counter<Integer>> pr_y, List<Counter<Integer>> pr_z, List<Counter<Integer>> pr_t) {
 	  
   }
   
-  /*private void computeFactor() {
-	  
-  }*/
-  
-  // TODO: Need to implement the randomization routine
   private ArrayList<Integer> randomizeVar(int sz){
 	  
 	  ArrayList<Integer> randomArray = new ArrayList<Integer>();
@@ -406,51 +392,49 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  return randomArray;
   }
   
-  /*private int [] gibbsSampler(int [] zPredicted){
+  Counter<Integer> createSelectFeatureVector(Set<Integer> arg1Type, Set<Integer> arg2Type, 
+		  Set<Integer> relLabelSet, Boolean isSingleYlabel, int singleYlabel){
 	  
-	  // TODO: check - init. to be done here or in constructor ??
-	  LabelWeights [] yVarsWts = new LabelWeights[10]; //TODO: No. of Y vars need to be intialised
-	  for(LabelWeights yWt : yVarsWts){
-		  yWt = new LabelWeights(labelIndex.size());
-	  }
-	  
-	  
-	  int [] yPredicted = new int[10]; // TODO: Init the correct val
-	  
-	  
-	  for(int i = 0; i < epochsInf; i++){ // TODO: Need to determine the right val. or another stopping criterion
-		  Counter<Integer> randomizedY = randomizeVar();
-		  
-		  for(int yVal : randomizedY.keySet()){
-			  computeFactor();
-		  }
-		  
-	  }
-	  
-	  return yPredicted;
-  }*/
-  
-  Counter<Integer> createSelectFeatureVector(Set<Integer> arg1Type, Set<Integer> arg2Type, Set<Integer> relLabel){
 	  Counter<Integer> yFeats_select = new ClassicCounter<Integer>();
 	  
-	  for(int label : relLabel){
+	  if(isSingleYlabel){
 		  for(int type2 : arg2Type){
 			  for(int type1 : arg1Type){
-				  //int key = label*100 + type2*10 + type1;
-				  int key = label + (type1 * labelIndex.size()) + (type2 * labelIndex.size() * argTypeIndex.size());
+				  int key = singleYlabel + (type1 * labelIndex.size()) + (type2 * labelIndex.size() * argTypeIndex.size());
 				  yFeats_select.incrementCount(key);
 			  }
 		  }
-	  }
-	  
-	  for(int label : relLabel){
+		  
 		  for(int typ : arg1Type){
-			  int key = label + (typ * labelIndex.size());
+			  int key = singleYlabel + (typ * labelIndex.size());
 			  yFeats_select.incrementCount(key);
 		  }
+		  
 		  for(int typ : arg2Type){
-			  int key = label + (typ * labelIndex.size()); // TODO: to check if this is fine. Should we treat arg1type and arg2type as different ?
+			  int key = singleYlabel + (typ * labelIndex.size() * argTypeIndex.size());
 			  yFeats_select.incrementCount(key);
+		  }
+	  }
+	  
+	  else {
+		  for(int label : relLabelSet){
+			  for(int type2 : arg2Type){
+				  for(int type1 : arg1Type){
+					  int key = label + (type1 * labelIndex.size()) + (type2 * labelIndex.size() * argTypeIndex.size());
+					  yFeats_select.incrementCount(key);
+				  }
+			  }
+		  }
+		  
+		  for(int label : relLabelSet){
+			  for(int typ : arg1Type){
+				  int key = label + (typ * labelIndex.size());
+				  yFeats_select.incrementCount(key);
+			  }
+			  for(int typ : arg2Type){
+				  int key = label + (typ * labelIndex.size() * argTypeIndex.size());
+				  yFeats_select.incrementCount(key);
+			  }  
 		  }  
 	  }
 	  
@@ -461,48 +445,54 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   
   // TODO: This function needs relooking in light of new mentionFeatureVector
   Counter<Integer> ComputePrY_ZiTi(int [] zPredicted, Set<Integer> arg1Type, 
-		  Set<Integer> arg2Type, Set<Integer> goldPos, Index<String> yLabels){
+		  Set<Integer> arg2Type, Set<Integer> goldPosY){
 	  
-	  Counter<Integer> ys = new ClassicCounter<Integer>();
-	  
-	  Counter<Integer> yFeats_select = createSelectFeatureVector(arg1Type, arg2Type, goldPos);
-	  
-	  //Counter<Integer> yFeats_mention = createMentionFeatureVector(goldPos, zPredicted, -1, -1);
-//			  new ClassicCounter<Integer>();
-//	  for(int z : zPredicted){
-//		  yFeats_mention.incrementCount(z);
-//	  }
-	  
-	  double totalScore = 0.0;
-	  for(String label : yLabels){
-		  int indx = yLabels.indexOf(label);
-		  
-		  Counter<Integer> yFeats_mention = createMentionFeatureVector(goldPos, zPredicted, -1, -1, true, indx);
-		  
-		  double score = selectFweights.dotProduct(yFeats_select);
-		  
-		  score += mentionFweights.dotProduct(yFeats_mention);
-		  
-		  score = Math.exp(score);
-//		  System.out.println("score : " + score);
-		  totalScore += score;
-		  ys.setCount(indx, score);
-	  }
-	  
-	  for(String label : yLabels){
-		  int indx = yLabels.indexOf(label);
-		  double prob = ys.getCount(indx)/totalScore;
-		  ys.setCount(indx, prob);
-	  }
-	  
-	  return ys;
-  }
-  
-  Counter<Integer> generateYPredicted(Counter<Integer> ys, Index<String> yLabels, double threshold) {
 	  Counter<Integer> yPredicted = new ClassicCounter<Integer>();
 	  
-	  for(String label : yLabels){
-		  int indx = yLabels.indexOf(label);
+	  Set<Integer> zPredictedSet[] = ErasureUtils.uncheckedCast(new Set[zPredicted.length]);
+	  for(int i = 0; i < zPredicted.length; i++){
+		  zPredictedSet[i] = new HashSet<Integer>();
+		  zPredictedSet[i].add(zPredicted[i]);
+	  }
+	  
+	  Counter<Integer> yFeats_selectNil = createSelectFeatureVector(arg1Type, arg2Type, goldPosY, true, nilIndex);
+	  double scoreSelNil = selectFweights.dotProduct(yFeats_selectNil);
+	  //scoreSelNil = Math.exp(scoreSelNil);
+	  
+	  Counter<Integer> yFeats_mentionNil = createMentionFeatureVector(goldPosY, zPredictedSet, -1, -1, true, nilIndex);
+	  double scoreMenNil = mentionFweights.dotProduct(yFeats_mentionNil);
+	  //scoreMenNil = Math.exp(scoreMenNil);
+	  
+	  double scoreNil = scoreSelNil + scoreMenNil;
+	  
+	  for(String labelName : labelIndex){
+		  int yLabel = labelIndex.indexOf(labelName);
+		  
+		  if(yLabel == nilIndex)
+			  continue;
+			  
+		  Counter<Integer> yFeats_select = createSelectFeatureVector(arg1Type, arg2Type, goldPosY, true, yLabel);
+		  double scoreSel = selectFweights.dotProduct(yFeats_select);
+		  //scoreSel = Math.exp(scoreSel);
+		  
+		  Counter<Integer> yFeats_mention = createMentionFeatureVector(goldPosY, zPredictedSet, -1, -1, true, yLabel);
+		  double scoreMen = mentionFweights.dotProduct(yFeats_mention);
+		  //scoreMen = Math.exp(scoreMen);
+		
+		  double scoreLabel = scoreSel + scoreMen;
+		  
+		  if(scoreLabel > scoreNil)
+			  yPredicted.setCount(yLabel, 1);
+	  }
+	  
+	  return yPredicted;
+  }
+  
+  Counter<Integer> generateYPredicted(Counter<Integer> ys, double threshold) {
+	  Counter<Integer> yPredicted = new ClassicCounter<Integer>();
+	  
+	  for(String label : labelIndex){
+		  int indx = labelIndex.indexOf(label);
 		  
 		  double score = ys.getCount(indx);
 		  if(score > threshold) 
@@ -553,7 +543,6 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
           Set<Integer> arg2Type,
           Counter<Integer> posUpdateStats,
           Counter<Integer> negUpdateStats,
-          Index<String> yLabels,
           int egId,
           int epoch) {
 	  
@@ -561,29 +550,35 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  int [] tPredicted = null;
 	  
 	  if(ALGO_TYPE == 1){
+		  // TODO: Also at a later stage, do we need to change this to block gibbs sampling to do joint inf... Pr(Y,Z | T) ?
 		  // \hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
 		  // 1. estimate Pr(Z) .. for now estimating \hat{Z}
-		  List<Counter<Integer>> pr_z = estimateZ(crtGroup); // ComputePrZ(crtGroup);
-		  // TODO: Now calling the estimateZ function. Need to check if it has to be replaced by ComputePrZ
-		  zPredicted = generateZPredicted(pr_z);
-		  
+		  List<Counter<Integer>> pr_z = estimateZ(crtGroup); // TODO: Now calling the estimateZ function. Need to check if it has to be replaced by ComputePrZ()
+		  zPredicted = generateZPredicted(pr_z); 
 		  // 2. estimate Pr(Y|Z,T)
-		  Counter<Integer> pr_y = ComputePrY_ZiTi(zPredicted, arg1Type, arg2Type, goldPos, yLabels);
-		  Counter<Integer> yPredicted = generateYPredicted(pr_y, yLabels, 0.01); // TODO: temporary hack .. need to parameterize this
+		  Counter<Integer> yPredicted = ComputePrY_ZiTi(zPredicted, arg1Type, arg2Type, goldPos);
+		  //Counter<Integer> yPredicted = generateYPredicted(pr_y, 0.01); // TODO: temporary hack .. need to parameterize this
 		  
 		  Set<Integer> [] zUpdate;
 		  
 		  if(updateCondition(yPredicted.keySet(), goldPos)){
-			  
-			  //zUpdate = generateZUpdate(goldPos, pr_z);
+			  //TODO: Do we need to differentiate between nil labels and non-nil labels (as in updateZModel) ? Verify during small dataset runs
 			  zUpdate = generateZUpdate(goldPos, crtGroup);
 			  updateZModel(zUpdate, zPredicted, crtGroup, epoch, posUpdateStats, negUpdateStats);
 			  updateMentionWeights(zUpdate, zPredicted, goldPos, yPredicted, epoch, posUpdateStats, negUpdateStats);
 			  updateSelectWeights(goldPos, yPredicted, arg1Type, arg2Type, epoch, posUpdateStats, negUpdateStats);
 		  }
+//		  else {
+//			  if(yPredicted.keySet().size() > 1){
+//				  System.out.println("-----------------");
+//				  System.out.println("Ypred : " + yPredicted.keySet());
+//				  System.out.println("Gold Pos" + goldPos);
+//				  System.out.println("Epoch : " + epoch);
+//			  }
+//		  }
 	  }
 	  
-	  else if(ALGO_TYPE == 2){
+	  else if(ALGO_TYPE == 2){ // TODO: Need to complete this ...
 		  List<Counter<Integer>> pr_y = null;
 		  List<Counter<Integer>> pr_z = null;
 		  List<Counter<Integer>> pr_t = null;
@@ -613,14 +608,13 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 		Set<Integer> arg2Type, int epoch, Counter<Integer> posUpdateStats,
 		Counter<Integer> negUpdateStats) {
 	  
-	  Counter<Integer> selectFeatsToAdd = createSelectFeatureVector(arg1Type, arg2Type, goldPos);
+	  Counter<Integer> selectFeatsToAdd = createSelectFeatureVector(arg1Type, arg2Type, goldPos, false, -1);
 	  
 	  Set<Integer> yPredictedSet = new HashSet<Integer>();
 	  for(int yPred : yPredicted.keySet())
 		  yPredictedSet.add(yPred);
-	  Counter<Integer> selectFeatsToSub = createSelectFeatureVector(arg1Type, arg2Type, yPredictedSet);
+	  Counter<Integer> selectFeatsToSub = createSelectFeatureVector(arg1Type, arg2Type, yPredictedSet, false, -1);
 	  
-	  // TODO: check this
 	  for (int feature : selectFeatsToAdd.keySet()){
 		  selectFweights.weights[feature] += getEta(epoch);
 	  }
@@ -629,34 +623,29 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 		  selectFweights.weights[feature] -= getEta(epoch);
 	  }
 	
+//	  for(double w : selectFweights.weights)
+//			System.out.print(w + " ");
+//		System.out.println();
 }
   
 private void updateMentionWeights(Set<Integer>[] zUpdate, int[] zPredicted,
-		Set<Integer> goldPos, Counter<Integer> yPredicted, int epoch,
+		Set<Integer> goldPosY, Counter<Integer> yPredicted, int epoch,
 		Counter<Integer> posUpdateStats, Counter<Integer> negUpdateStats) {
 	
-	int [] zUpdateArray = new int[zUpdate.length];
-	for(int i = 0; i < zUpdate.length; i++){
-		Set<Integer> z = zUpdate[i];
-		if(z.size() > 1)
-			System.out.println("---------------Ajay: more than 1 zUpdate---------------------");
-		else{
-			Iterator<Integer> zIterator = z.iterator();
-			zUpdateArray[i] = zIterator.next();
- 		}		
-	}
-	Counter<Integer> mentionFVtoadd = createMentionFeatureVector(goldPos, zUpdateArray, -1, -1, false, -1);
-	
-	
+	Counter<Integer> mentionFVtoadd = createMentionFeatureVector(goldPosY, zUpdate, -1, -1, false, -1);
+
 	Set<Integer> yPredictedSet = new HashSet<Integer>();
 	for(int y : yPredicted.keySet()){
 		yPredictedSet.add(y);
 	}
-		
-	Counter<Integer> mentionFVtosub = createMentionFeatureVector(yPredictedSet, zPredicted, -1, -1, false, -1);
 	
-
-	// TODO: Check this  
+	Set<Integer> zPredictedSet[] = ErasureUtils.uncheckedCast(new Set[zPredicted.length]);
+	for(int i = 0; i < zPredicted.length; i++){
+		  zPredictedSet[i] = new HashSet<Integer>();
+		  zPredictedSet[i].add(zPredicted[i]);
+	}
+	Counter<Integer> mentionFVtosub = createMentionFeatureVector(yPredictedSet, zPredictedSet, -1, -1, false, -1);
+	
 	for (int feature : mentionFVtoadd.keySet()){
 		mentionFweights.weights[feature] += getEta(epoch);
 	}
@@ -666,6 +655,9 @@ private void updateMentionWeights(Set<Integer>[] zUpdate, int[] zPredicted,
 	}
 	
 	//TODO: To use posUpdateStats and negUpdateStats
+//	for(double w : mentionFweights.weights)
+//		System.out.print(w + " ");
+//	System.out.println();
 	
 }
   
@@ -683,6 +675,7 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 	  return tPredicted;
   }
   
+  //TODO: Why is nilLabel treated separately ? Do we have to do the same in other update functions ? Or we have change it here ?
   private void updateZModel(
           Set<Integer> [] goldZ,
           int [] predictedZ,
@@ -754,26 +747,43 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 	  return vector;
   }
   
-  Counter<Integer> createMentionFeatureVector(Set<Integer> yVars, int [] zPredicted, int zVar, int zLabel, Boolean singleYlabel, int ylabel){
+  Counter<Integer> createMentionFeatureVector(Set<Integer> yLabelsSet, Set<Integer> [] zPredictedSet, int zVar, 
+		  int zLabel, Boolean isSingleYlabel, int singleYlabel){
 	  
 	  Counter<Integer> mentionFeatureVector = new ClassicCounter<Integer>();
-	  Counter<Integer> yVarsVector = createVector(yVars);
 	  
-	  // add the NIL label TODO: Check if this is to be added
-	  //mentionFeatureVector.incrementCount(0);
-	  
-	  for(int yLabel : yVarsVector.keySet()){
+	  int [] zPredicted = new int[zPredictedSet.length];
+	  for(int i = 0; i < zPredictedSet.length; i ++){
+		  Set<Integer> zPred = zPredictedSet[i];
+		  Iterator<Integer> iter = zPred.iterator();
+		  zPredicted[i] = iter.next();
+	  }
+	  	  
+	  if(isSingleYlabel){
 		  for(int j = 0; j < zPredicted.length; j ++){
 			  
 			  int z = zPredicted[j];
 			  
-			  if(z == zVar){
-				  int key = (yLabel * labelIndex.size()) + zLabel; // add the zLabel for this zVar instead of zLabel
-				  mentionFeatureVector.incrementCount(key);
-			  }
-			  else{
-				  int key = (yLabel * labelIndex.size()) + z;
-				  mentionFeatureVector.incrementCount(key);
+			  int key = (singleYlabel * labelIndex.size()) + z;
+			  mentionFeatureVector.incrementCount(key);
+		  }
+	  }
+	  
+	  else {
+		  Counter<Integer> yLabelsVector = createVector(yLabelsSet);
+		  for(int ylabel : yLabelsVector.keySet()){
+			  for(int j = 0; j < zPredicted.length; j ++){
+				  
+				  int zPredLabel = zPredicted[j];
+				  
+				  if(j == zVar){ //for the particular zVar : Pr(zVar | otherZ, Yi)
+					  int key = (ylabel * labelIndex.size()) + zLabel; // add the zLabel for this zVar instead of zPredLabel
+					  mentionFeatureVector.incrementCount(key);
+				  }
+				  else{
+					  int key = (ylabel * labelIndex.size()) + zPredLabel;
+					  mentionFeatureVector.incrementCount(key);
+				  }
 			  }
 		  }
 	  }
@@ -781,103 +791,129 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 	  return mentionFeatureVector;
   }
 
-  /*
+  /**
    * Gibbs sampling of Z
-   * TODO: This needs to be replaced by our inference code
+   * ------------------------------------------------
+   * while (not converged) {
+   * 	choose a random permutation for Z variable Pi
+   * 	for (j = 1 to |Z|) {
+   * 		update Z_{Pi_j} given the rest is fixed
+   * 	}
+   * }
    */
-  /*private Set<Integer> [] generateZUpdate(
-          Set<Integer> goldPos,
-          List<Counter<Integer>> pr_z) {*/
   	private Set<Integer> [] generateZUpdate(
-          Set<Integer> goldPos,
-          int [][] crtGroup) {  
-	  /**
-	   * while (not converged) {
-	   * 	choose a random permutation for Z variable Pi
-	   * 	for (j = 1 to |Z|) {
-	   * 		update Z_{Pi_j} given the rest is fixed
-	   * 	}
-	   * }
-	   */
-  		
-  		//TODO: To also add the extract factors in the computation below
-  	
+          Set<Integer> goldPosY,
+          int [][] crtGroup) {
+	  
   	  List<Counter<Integer>> pr_z = ComputePrZ(crtGroup);
   	  int zPredicted [] = generateZPredicted(pr_z);
   		
 	  Set<Integer> [] zUpdate = ErasureUtils.uncheckedCast(new Set[pr_z.size()]);
+	  //Initialise zUpdate
+	  for(int i = 0; i < zUpdate.length; i++){
+		  zUpdate[i] = new HashSet<Integer>();
+		  zUpdate[i].add(zPredicted[i]);
+	  }
 	  
-	  Counter<Integer> zScores = new ClassicCounter<Integer>();
+	  Counter<Integer> zScoresMen = new ClassicCounter<Integer>();
+	  Counter<Integer> zScoresExt = new ClassicCounter<Integer>();
 	  
 	  for(int i = 0; i < epochsInf; i ++){
-		  
+		  //Log.severe("Gibbs Sampling: Started epochInf #" + i + "...");
 		  ArrayList<Integer> randomArray = randomizeVar(pr_z.size()); 
 		  
 		  for(int j = 0; j < zUpdate.length; j ++){
 
 			  int zVar = randomArray.get(j);
 			  
+			  double totalScoreMen = 0.0;
+			  double totalScoreExt = 0.0;
+
 			  for(int zLabel = 0; zLabel < labelIndex.size(); zLabel ++){
-				//TODO: check for correctness ... Need to include label info ... else we are computing the same value for all labels ...
-				  Counter<Integer> mentionFeatureVector = createMentionFeatureVector(goldPos, zPredicted, zVar, zLabel, false, -1); 
-				  double score = mentionFweights.dotProduct(mentionFeatureVector);
+				  Counter<Integer> mentionFeatureVector = createMentionFeatureVector(goldPosY, zUpdate, zVar, zLabel, false, -1);  
+				  Double scoreMen = mentionFweights.dotProduct(mentionFeatureVector);
+				 
+				  // TODO: Temporary hack to take care of +infinity
+				  if(scoreMen >= 700){
+					  scoreMen = Double.MAX_VALUE;
+					  totalScoreMen = Double.MAX_VALUE;
+				  }
+				  else{
+					  scoreMen = Math.exp(scoreMen);
+					  totalScoreMen += scoreMen;
+				  }
 				  
-				  zScores.setCount(zLabel, score);
+				  zScoresMen.setCount(zLabel, scoreMen);
+				  
+				  //adding the extract factors for the given zVar (i.e. Xi for the given Zi and label fixed to zLabel)
+				  double scoreExt = estimateZ(crtGroup[zVar], zLabel);
+				  scoreExt += Math.exp(scoreExt);
+				  zScoresExt.setCount(zLabel, scoreExt);
 			  }
 			  
-			  zUpdate[zVar] = selectBestZ(zScores);
+			  // normalize the zScores
+			  for(int zLabel : zScoresMen.keySet()){
+				  double score = zScoresMen.getCount(zLabel);
+				  score = score / totalScoreMen;
+				  zScoresMen.setCount(zLabel, score);
+			  }
+			  
+			  for(int zLabel : zScoresExt.keySet()){
+				  double score = zScoresExt.getCount(zLabel);
+				  score = score / totalScoreExt;
+				  zScoresExt.setCount(zLabel, score);
+			  }
+			  
+			  //TODO: Smoothing, in case of 0 counts; Need to investigate why 0 is is coming in totalScore; IS this RIGHT ?
+			  if(totalScoreMen == 0){
+				  //System.out.println("-----0 in totalScoreMen-----");
+				  for(int zLabel : zScoresMen.keySet()){
+					  double score = 1.0 / labelIndex.size();
+					  zScoresMen.setCount(zLabel, score);
+				  }
+			  }
+			  if(totalScoreExt == 0){
+				  //System.out.println("-----0 in totalScoreExt-----");
+				  for(int zLabel : zScoresExt.keySet()){
+					  double score = 1.0 / labelIndex.size();
+					  zScoresExt.setCount(zLabel, score);
+				  }
+			  }
+			  
+			  Set<Integer> bestZ = selectBestZ(zScoresMen, zScoresExt);
+			  // add the bestZ (from the estimated scores of current set of zLabels) for variable Zj in the 'i'th iteration (also clear the old label)
+			  zUpdate[zVar].clear();
+			  zUpdate[zVar].addAll(bestZ); 
 		  }
 	  }
 
 	  return zUpdate;
   }
   	
-  Set<Integer> selectBestZ(Counter<Integer> zScores){
+  Set<Integer> selectBestZ(Counter<Integer> zScoresMen, Counter<Integer> zScoresExt){
 	  Set<Integer> bestZ = new HashSet<Integer>();
 	  
 	  double maxScore = Double.MIN_VALUE;
 	  int maxZ = -1;
-	  for(int z : zScores.keySet()){
-		  double value = zScores.getCount(z);
+	  for(int z : zScoresMen.keySet()){
+		  double score = zScoresMen.getCount(z);
 		  
-		  if(value > maxScore){
-			  maxScore = value;
+		  score *= zScoresExt.getCount(z);
+		  
+		  if(score > maxScore){
+			  maxScore = score;
 			  maxZ = z;
 		  }
 	  }
 	  
 	  if(maxZ != -1)
 		  bestZ.add(maxZ);
-	  else
+	  else{
 		  System.out.println("------------------ERROR no max in Z!! -------------------");
+	  }
 	  
 	  return bestZ;
   }
-
-  /**
-   * TODO: Need to code this up correctly
-   * 
-   */
-  /*
-  private Counter<Integer> estimateY(int [] zPredicted, int ySz, Set<Integer> arg1Type, Set<Integer> arg2Type) {
-    Counter<Integer> ys = new ClassicCounter<Integer>();
-    
-    LabelWeights yWeights = new LabelWeights(ySz);
-    
-    // arg1vector
-    Counter<Integer> arg1TypeVector = new ClassicCounter<Integer>();
-    for(int arg1 : arg1Type) arg1TypeVector.incrementCount(arg1);
-    
-    // arg2vector
-    Counter<Integer> arg2TypeVector = new ClassicCounter<Integer>();
-    for(int arg2 : arg2Type) arg2TypeVector.incrementCount(arg2);
-    
-    // zpredVector
-    Counter<Integer> zPredVector = new ClassicCounter<Integer>();
-    for(int z : zPredicted) zPredVector.incrementCount(z);
-    
-    return ys;
-  }*/
 
   private List<Counter<Integer>> estimateZ(int [][] datums) {
     List<Counter<Integer>> zs = new ArrayList<Counter<Integer>>();

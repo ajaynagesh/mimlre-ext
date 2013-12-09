@@ -88,7 +88,6 @@ public MultiLabelDataset() {
     size = 0;
     
  // Added by Ajay : 02/10/2013
-    size = 0;
     argTypeIndex = new HashIndex<L>(); 
     arg1TypesArray = new Set[numDatums];
     arg2TypesArray = new Set[numDatums];
