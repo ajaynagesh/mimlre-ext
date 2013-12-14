@@ -136,11 +136,14 @@ public class KBPEvaluator {
     stateAbbreviationsToFullName = new HashMap<String, String>();
     loadStateAbbreviations(props.getProperty(Props.STATES, "/u/nlp/data/TAC-KBP2010/states/state-abbreviations.txt"),
         stateAbbreviations, stateAbbreviationsToFullName);
-    gazetteer = new MaxmindGazetteer();
-
+    Log.severe("Starting to load Maxmind Gaz ...");
+    gazetteer = new MaxmindGazetteer(); 
+    //Log.severe("AJAY: NOT CALLING MaxmindGazeteer ... NEED TO ENABLE LATER");
+    Log.severe("Loaded Maxmind Gaz .. !!");
+    
     kbEntities = reader.parseKnowledgeBase(props.getProperty(Props.INPUT_KB));
 
-    slotsToNamedEntities = new SlotsToNamedEntities(props.getProperty(Props.NERENTRY_FILE));
+    slotsToNamedEntities = new SlotsToNamedEntities(props.getProperty(Props.NERENTRY_FILE)); //TODO: what is this ?
 
     // TODO: fix absolute path
     overlappingRelations = loadOverlappingRelations(props.getProperty(Props.OVERLAPPING_RELATIONS,

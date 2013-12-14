@@ -5,7 +5,7 @@
 	<classpathentry kind="lib" path="lib/commons-compress-1.3.jar"/>
 	<classpathentry kind="lib" path="lib/commons-lang-2.5.jar"/>
 	<classpathentry kind="lib" path="lib/fastutil.jar"/>
-	<classpathentry kind="lib" path="lib/faust-gazetteer-1.0.3003.jar"/>
+	<classpathentry kind="lib" path="lib/faust-gazetteer-1.0.3003.jar" sourcepath="libsrc/xom-src-1.2.7.zip"/>
 	<classpathentry kind="lib" path="lib/htmlparser.jar"/>
 	<classpathentry kind="lib" path="lib/jgraph.jar"/>
 	<classpathentry kind="lib" path="lib/jgrapht.jar"/>

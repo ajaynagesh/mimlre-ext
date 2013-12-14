@@ -4,7 +4,7 @@
 kbp.runid = mimlre_small_newAlgo
 serializedRelationExtractorPath = kbp_relation_model_mimlre_small
 work.dir = small_dataset/corpora
-trainer.model = selprefor
+trainer.model = atleastonce
 
 
 #
@@ -136,8 +136,7 @@ inference.type = stable
 
 # AtLeastOnce settings (tuned on dev)
 perceptron.epochs = 5
-inference.epochs = 10
-algo.type = 1
+
 
 #
 # KBPTrainer/Tester settings

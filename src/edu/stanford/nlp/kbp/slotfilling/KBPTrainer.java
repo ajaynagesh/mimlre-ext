@@ -54,7 +54,7 @@ import edu.stanford.nlp.util.StringUtils;
  */
 public class KBPTrainer {
   private static final boolean TEST_ON_DEVEL = false;
-  private static final boolean EVALUATE_AFTER_TRAIN = false;//@ajay : changing from true;
+  private static final boolean EVALUATE_AFTER_TRAIN = true;//@ajay : changing from true;
   private static boolean CALL_TRAIN_FROM_DATUM_GEN = true; 
 
   private final String workDir;

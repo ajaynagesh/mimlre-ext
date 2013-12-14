@@ -106,4 +106,6 @@ public class Props {
   public static final String INFERENCE_DURING_TUNING = "inference.during.tuning";
   public static final String MATCH_SLOTNE = "reader.matchSlotNE";
   public static final String ANYDOC = "score.anydoc";
+  public static final String INFERENCE_EPOCHS = "inference.epochs"; // Ajay: added for inference param in selprefor gibbs sampling
+  public static final String ALGOTYPE = "algo.type";
 }

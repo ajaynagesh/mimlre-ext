@@ -2,6 +2,7 @@ package edu.stanford.nlp.kbp.slotfilling.classify;
 
 import edu.stanford.nlp.classify.Dataset;
 import edu.stanford.nlp.ie.machinereading.structure.RelationMention;
+import edu.stanford.nlp.kbp.slotfilling.KBPEvaluator;
 import edu.stanford.nlp.kbp.slotfilling.KBPTrainer;
 import edu.stanford.nlp.kbp.slotfilling.common.Constants;
 import edu.stanford.nlp.kbp.slotfilling.common.Log;
@@ -16,6 +17,11 @@ import edu.stanford.nlp.util.StringUtils;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.sri.faust.gazetteer.Gazetteer;
+import com.sri.faust.gazetteer.maxmind.MaxmindGazetteer;
 
 /**
  * Our version of the distant supervision relation extraction system.
@@ -28,8 +34,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   private static final long serialVersionUID = 1L;
   private static final int LABEL_ALL = -1;
 
-  //TODO: need to add this in the param file
-  private static int ALGO_TYPE = 1; // 1 - for test type 1 , 2 - for test type 2 (cf. write-up,notes on google doc)
+  private final int ALGO_TYPE; // 1 - for test type 1 , 2 - for test type 2 (cf. write-up,notes on google doc)
   
   /**
    * Stores weight information for one label
@@ -97,6 +102,10 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
     double dotProduct(Counter<Integer> vector) {
       return dotProduct(vector, weights);
     }
+    
+    double avgDotProduct(Counter<Integer> vector){
+    	return dotProduct(vector, avgWeights);
+    }
 
     double avgDotProduct(Collection<String> features, Index<String> featureIndex) {
       Counter<Integer> vector = new ClassicCounter<Integer>();
@@ -144,15 +153,21 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
   /** Number of epochs during training */
   final int epochs;
   
-  int epochsInf = 10;
+  final int epochsInf;
 
   public SelPrefORExtractor(int epochs) {
     this.epochs = epochs;
+    this.epochsInf = 10;
+    this.ALGO_TYPE = 1;
   }
   public SelPrefORExtractor(Properties props) {
     Log.severe("SelPrefORExtractor configured with the following properties:");
     this.epochs = PropertiesUtils.getInt(props, Props.PERCEPTRON_EPOCHS, 10);
+    this.epochsInf = PropertiesUtils.getInt(props, Props.INFERENCE_EPOCHS, 10);
+    this.ALGO_TYPE = PropertiesUtils.getInt(props, Props.ALGOTYPE, 1);
     Log.severe("epochs = " + epochs);
+    Log.severe("Algorithm type is " + ALGO_TYPE);
+    Log.severe("Inference rounds (gibbs sampling) = " + epochsInf );
   }
 
   @Override
@@ -199,6 +214,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 //	    for(int i = 0; i < arg2biasFweights.length; i++) 
 //	    	arg2biasFweights[i] = new LabelWeights(dataset.argFeatIndex().size());
 
+	    Log.severe("DATASET SIZE = " + dataset.size());
 	    /**
 	     * Training algorithm starts here
 	     */
@@ -349,9 +365,21 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 
 	  //testRandomArrayGen();
 	  
+	  /**
+	   * Training algorithm
+	   */
 	  train(props);
+	   
+	  /**
+	   * Evaluation
+	   */
+	  // enable coref during testing!
+	  props.setProperty(Props.INDEX_PIPELINE_METHOD, "FULL");
+	  // we do not care about model combination mode here
+	  props.setProperty(Props.MODEL_COMBINATION_ENABLED, "false");
+	  KBPEvaluator.extractAndScore(props, false);
 
-  }  
+  }
 
   private Counter<Integer> estimateZ(int [] datum) {
     Counter<Integer> vector = new ClassicCounter<Integer>();
@@ -482,7 +510,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 		  double scoreLabel = scoreSel + scoreMen;
 		  
 		  if(scoreLabel > scoreNil)
-			  yPredicted.setCount(yLabel, 1);
+			  yPredicted.setCount(yLabel, scoreLabel);
 	  }
 	  
 	  return yPredicted;
@@ -549,33 +577,31 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  int [] zPredicted = null;
 	  int [] tPredicted = null;
 	  
+	  if(egId % 1000 == 0)
+		  Log.severe("Completed processing " + egId + " pairs of entities");
+	  
 	  if(ALGO_TYPE == 1){
 		  // TODO: Also at a later stage, do we need to change this to block gibbs sampling to do joint inf... Pr(Y,Z | T) ?
 		  // \hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
 		  // 1. estimate Pr(Z) .. for now estimating \hat{Z}
+		  //Log.severe("Started Pr(Y,Z|T,X)");
 		  List<Counter<Integer>> pr_z = estimateZ(crtGroup); // TODO: Now calling the estimateZ function. Need to check if it has to be replaced by ComputePrZ()
 		  zPredicted = generateZPredicted(pr_z); 
 		  // 2. estimate Pr(Y|Z,T)
 		  Counter<Integer> yPredicted = ComputePrY_ZiTi(zPredicted, arg1Type, arg2Type, goldPos);
-		  //Counter<Integer> yPredicted = generateYPredicted(pr_y, 0.01); // TODO: temporary hack .. need to parameterize this
-		  
+		  //Log.severe("Completed Pr(Y,Z|T,X)");
 		  Set<Integer> [] zUpdate;
 		  
 		  if(updateCondition(yPredicted.keySet(), goldPos)){
 			  //TODO: Do we need to differentiate between nil labels and non-nil labels (as in updateZModel) ? Verify during small dataset runs
+			  //Log.severe("Started Gibbs sampling");
 			  zUpdate = generateZUpdate(goldPos, crtGroup);
+			  //Log.severe("Gibbs sampling done... Starting param updates");
 			  updateZModel(zUpdate, zPredicted, crtGroup, epoch, posUpdateStats, negUpdateStats);
 			  updateMentionWeights(zUpdate, zPredicted, goldPos, yPredicted, epoch, posUpdateStats, negUpdateStats);
 			  updateSelectWeights(goldPos, yPredicted, arg1Type, arg2Type, epoch, posUpdateStats, negUpdateStats);
+			  //Log.severe("Param updates completed");
 		  }
-//		  else {
-//			  if(yPredicted.keySet().size() > 1){
-//				  System.out.println("-----------------");
-//				  System.out.println("Ypred : " + yPredicted.keySet());
-//				  System.out.println("Gold Pos" + goldPos);
-//				  System.out.println("Epoch : " + epoch);
-//			  }
-//		  }
 	  }
 	  
 	  else if(ALGO_TYPE == 2){ // TODO: Need to complete this ...
@@ -756,7 +782,14 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 	  for(int i = 0; i < zPredictedSet.length; i ++){
 		  Set<Integer> zPred = zPredictedSet[i];
 		  Iterator<Integer> iter = zPred.iterator();
-		  zPredicted[i] = iter.next();
+		  if(iter.hasNext()) {
+			  zPredicted[i] = iter.next();
+		  }
+		  else {
+			  Log.severe("zPredicted("+i+") = " + zPred +  " ... So adding " + nilIndex);
+			  zPredicted[i] = nilIndex;
+		  }
+			  
 	  }
 	  	  
 	  if(isSingleYlabel){
@@ -968,39 +1001,106 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
     });
   }
 
+  private void extractArgTypes(List<Collection<String>> mentions, Set<Integer> arg1Type, Set<Integer> arg2Type){
+	  
+	  for(int i = 0; i < mentions.size(); i ++){
+		  Collection<String> mentionFeatures = mentions.get(i);
+		  
+		  String arg1_arg2 = mentionFeatures.iterator().next();
+		  String REGEX = "arg1type\\=(.*)\\:(.*)\\_and\\_arg2type\\=(.*)";
+		  Pattern r = Pattern.compile(REGEX);
+		  Matcher m = r.matcher(arg1_arg2);
+		  if(m.find()){
+			  int arg1 = argTypeIndex.indexOf(m.group(2));
+		      int arg2 = argTypeIndex.indexOf(m.group(3));
+		      
+		      if(arg1 < 0){
+		    	  Log.severe("Ajay: New arg1 type in test : " + m.group(2) + " .. adding");
+		    	  argTypeIndex.add(m.group(2));
+		    	  arg1 = argTypeIndex.indexOf(m.group(2));
+		      }
+		      
+		      if(arg2 < 0){
+		    	  Log.severe("Ajay: New arg2 type in test : " + m.group(3) + " .. adding");
+		    	  argTypeIndex.add(m.group(3));
+		    	  arg2 = argTypeIndex.indexOf(m.group(3));
+		      }
+		      
+		      arg1Type.add(arg1);
+		      arg2Type.add(arg2);
+		      
+//		      System.out.println(argTypeIndex);
+//			  System.out.println("Found value: " + m.group(0));
+//			  System.out.println("Found value: " + m.group(1));
+//		      System.out.println("Found value: " + m.group(2));//  + " : " + arg1 );
+//		      System.out.println("Found value: " + m.group(3));//  + " : " + arg2);
+		  }
+		  else{
+			  Log.severe("ARG1type and ARG2type not found ... quitting");
+			  System.exit(0);
+		  }
+		  //System.out.println("-------\narg1-arg2 : " + arg1_arg2);
+	  }
+  }
+  
+  /**
+   * Our inference function
+   * Currently coding Pr(Y,Z|T) equivalent to the one used in training
+   */
   @Override
   public Counter<String> classifyMentions(List<Collection<String>> mentions) {
-    Counter<String> bestZScores = new ClassicCounter<String>();
+    Counter<String> yScores = new ClassicCounter<String>();
 
+    List<Counter<Integer>> mentionScoresList = new ArrayList<Counter<Integer>>();
     // traverse of all mention of this tuple
     for (int i = 0; i < mentions.size(); i++) {
       // get all scores for this mention
       Collection<String> mentionFeatures = mentions.get(i);
-      Counter<String> mentionScores = classifyMention(mentionFeatures);
+      Counter<Integer> mentionScores = classifyMention(mentionFeatures);
 
-      Pair<String, Double> topPrediction = JointBayesRelationExtractor.sortPredictions(mentionScores).get(0);
-      String l = topPrediction.first();
-      double s = topPrediction.second();
-
-      // update the best score for this label if necessary
-      // exclude the NIL label from this; it is not propagated in the Y layer
-      if(! l.equals(RelationMention.UNRELATED) &&
-         (! bestZScores.containsKey(l) || bestZScores.getCount(l) < s)) {
-        bestZScores.setCount(l, s);
-      }
+      mentionScoresList.add(mentionScores);
+      
     }
 
-    // generate the predictions of the Y layer using deterministic OR
-    // the score of each Y label is the best mention-level score
-    return bestZScores;
+    int zPredicted[] = generateZPredicted(mentionScoresList);
+    
+    Set<Integer> arg1Type = new HashSet<Integer>();
+    Set<Integer> arg2Type = new HashSet<Integer>();    
+    extractArgTypes(mentions, arg1Type, arg2Type);
+    
+    Counter<Integer> yPredicted = ComputePrY_ZiTi(zPredicted, arg1Type, arg2Type, null);
+    
+    for(int indx : yPredicted.keySet()){
+    	String label = labelIndex.get(indx);
+    	double value = yPredicted.getCount(indx);
+    	yScores.setCount(label, value);
+    }
+    
+//    if(bestZScores.keySet().size() > 1)
+//    	System.out.println("Ajay : " + bestZScores);
+    
+    return yScores;
   }
 
-  private Counter<String> classifyMention(Collection<String> testDatum) {
-    Counter<String> scores = new ClassicCounter<String>();
-    for(int labelIdx = 0; labelIdx < zWeights.length; labelIdx ++){
-      double score = zWeights[labelIdx].avgDotProduct(testDatum, zFeatureIndex);
-      scores.setCount(labelIndex.get(labelIdx), score);
+  private Counter<Integer> classifyMention(Collection<String> testDatum) {
+ 
+	/**
+	 * estimateZ routine during inference. Calling avgDotProduct   
+	 */
+	  
+    Counter<Integer> vector = new ClassicCounter<Integer>();
+    for(String feat: zFeatureIndex) {
+      int idx = zFeatureIndex.indexOf(feat);
+      if(idx >= 0) vector.incrementCount(idx);
     }
+    
+    Counter<Integer> scores = new ClassicCounter<Integer>();
+    for(int labelIdx = 0; labelIdx < zWeights.length; labelIdx ++){
+      double score = zWeights[labelIdx].avgDotProduct(vector); // TODO: to check why avgDotProduct be called
+      //score = zWeights[labelIdx].avgDotProduct(testDatum, zFeatureIndex);
+      scores.setCount(labelIdx, score);
+    }
+
     return scores;
   }
 
@@ -1032,7 +1132,11 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 
     out.writeObject(labelIndex);
     out.writeObject(zFeatureIndex);
-
+    
+    // Write out new indices and weights learnt 
+    out.writeObject(argTypeIndex);
+    out.writeObject(mentionFweights);
+    out.writeObject(selectFweights);
     out.close();
   }
 
@@ -1047,6 +1151,11 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
     labelIndex = ErasureUtils.uncheckedCast(in.readObject());
     nilIndex = labelIndex.indexOf(RelationMention.UNRELATED);
     zFeatureIndex = ErasureUtils.uncheckedCast(in.readObject());
+    
+    // read the newly created objects
+    argTypeIndex = ErasureUtils.uncheckedCast(in.readObject());
+    mentionFweights = ErasureUtils.uncheckedCast(in.readObject());
+    selectFweights = ErasureUtils.uncheckedCast(in.readObject());
   }
 
   public static RelationExtractor load(String modelPath, Properties props) throws IOException, ClassNotFoundException {

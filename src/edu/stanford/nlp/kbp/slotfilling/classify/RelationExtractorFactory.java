@@ -57,7 +57,10 @@ public class RelationExtractorFactory {
       relationExtractor = JointBayesRelationExtractor.load(modelPath, props);
     } else if(modelType == ModelType.LOCAL_BAYES) {
       relationExtractor = JointBayesRelationExtractor.load(modelPath, props);
-    } else {
+    } else if(modelType == ModelType.SelPrefOR_EXTRACTOR){ // Adding the modelType of the new extractor
+      relationExtractor = SelPrefORExtractor.load(modelPath, props); 
+    }
+    else {
       throw new RuntimeException("ERROR: Unknown modelType " + modelType);
     }
     return relationExtractor;
