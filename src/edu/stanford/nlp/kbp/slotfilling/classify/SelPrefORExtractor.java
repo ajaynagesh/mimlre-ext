@@ -107,16 +107,6 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
     	return dotProduct(vector, avgWeights);
     }
 
-    double avgDotProduct(Collection<String> features, Index<String> featureIndex) {
-      Counter<Integer> vector = new ClassicCounter<Integer>();
-      for(String feat: features) {
-        int idx = featureIndex.indexOf(feat);
-        if(idx >= 0) vector.incrementCount(idx);
-      }
-
-      return dotProduct(vector, avgWeights);
-    }
-
     static double dotProduct(Counter<Integer> vector, double [] weights) {
       double dotProd = 0;
       for (Map.Entry<Integer, Double> entry : vector.entrySet()) {
@@ -170,20 +160,20 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
     Log.severe("Inference rounds (gibbs sampling) = " + epochsInf );
   }
 
+
+	// 4 sets of variables for each of the factors
+	// 1) f_bias 2) f_select 3) f_mention 4) f_extract
+
+	/*
+	 * f_bias -- independent
+	 * f_select (T_arg1, T_arg2, Y)
+	 * f_mention (Y, Z_1 .. Z_n)
+	 * f_extract -- independent -- DONE
+	 */
+  
   @Override
   public void train(MultiLabelDataset<String, String> dataset) {
-  	
-	  	// 4 sets of variables for each of the factors
-	  	// 1) f_bias 2) f_select 3) f_mention 4) f_extract
-	  
-	  	/*
-	  	 * f_bias -- independent
-	  	 * f_select (T_arg1, T_arg2, Y)
-	  	 * f_mention (Y, Z_1 .. Z_n)
-	  	 * f_extract -- independent -- DONE
-	  	 */
-	  
-	    Log.severe("Training the \"Selectional Preference with Overlapping relations\" model using "
+ 	    Log.severe("Training the \"Selectional Preference with Overlapping relations\" model using "
 	            + dataset.featureIndex().size() + " features and "
 	            + "the following labels: " + dataset.labelIndex().toString());
 
@@ -241,6 +231,9 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 
 	    		// update the number of iterations an weight vector has survived
 	    		for(LabelWeights zw: zWeights) zw.updateSurvivalIterations();
+	    		
+	    		mentionFweights.updateSurvivalIterations();
+	    		selectFweights.updateSurvivalIterations();
 	    	}
 
 	    	Log.severe("Epoch #" + t + " completed. Inspected " +
@@ -252,6 +245,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 
 	    // finalize learning: add the last vector to the avg for each label
 	    for(LabelWeights zw: zWeights) zw.addToAverage();
+	    mentionFweights.addToAverage();
+	    selectFweights.addToAverage();
   }
   
   static public List<File> fetchFiles(String path, final String extension) {
@@ -356,6 +351,64 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  System.exit(0);
   }
   
+  /**
+   * Load the learnt models ... for dubugging purposes
+ * @throws IOException 
+ * @throws ClassNotFoundException 
+   */
+  public static void loadModels(Properties props) throws ClassNotFoundException, IOException{
+	  PrintStream os = new PrintStream("/home/ajay/Desktop/weights.txt");
+	  //String modelPath1 = "corpora/kbp/kbp_relation_model_selprefor.SelPrefOR_EXTRACTOR.5.ser";
+//	  SelPrefORExtractor selpreforExt = (SelPrefORExtractor)SelPrefORExtractor.load(modelPath1, props);
+//	  Log.severe("Loaded SelPrefORExtractor - learnt before");
+//	  os.println("selpreforExt zWeights\n-----------");
+//	  for(LabelWeights z : selpreforExt.zWeights){
+//		  double l1norm = 0.0;
+//		  double l2norm = 0.0;
+//		  for(double w : z.avgWeights){
+//			  l1norm += w;
+//			  l2norm += (w*w);
+////			  if(w > 0)
+////				  System.out.println("wt : " + w);
+//		  }
+//		  os.println("L1 norm : " + l1norm + " -- L2 norm : " + Math.sqrt(l2norm));
+//	  }
+	  
+	  System.out.println("----------------------");
+	  
+	  String modelPath2 = "/home/ajay/Desktop/selprefor_2_100_exp_run/kbp_relation_model_selprefor.SelPrefOR_EXTRACTOR.5.ser";
+	  SelPrefORExtractor  selpreforExtNew = (SelPrefORExtractor)SelPrefORExtractor.load(modelPath2, props);
+	  Log.severe("Loaded SelPrefORExtractor - newly learnt");
+	  os.println("SelPrefORExtractor zWeights - newly learnt\n-----------");
+	  for(SelPrefORExtractor.LabelWeights z : selpreforExtNew.zWeights){
+		  double l1norm = 0.0;
+		  double l2norm = 0.0;
+		  for(double w : z.avgWeights){
+			  l1norm += w;
+			  l2norm += (w*w);
+//			  if(w > 0)
+//				  System.out.println("wt : " + w);
+		  }
+		  os.println("L1 norm : " + l1norm + " -- L2 norm : " + Math.sqrt(l2norm));
+	  }
+	  os.println("SelPrefORExtractor mentionFweights - newly learnt( size = " + selpreforExtNew.mentionFweights.avgWeights.length +" ) \n-----------");
+	  for(int i = 0; i < selpreforExtNew.mentionFweights.avgWeights.length; i++ )
+		  if(selpreforExtNew.mentionFweights.avgWeights[i] > 0)
+			  os.print(selpreforExtNew.mentionFweights.avgWeights[i] + " ");
+	  os.println();
+	  
+	  os.println("SelPrefORExtractor selectFweights - newly learnt ( size = " + selpreforExtNew.selectFweights.avgWeights.length +" ) \n-----------");
+	  for(int i = 0; i < selpreforExtNew.selectFweights.avgWeights.length; i++ )
+		  if(selpreforExtNew.selectFweights.avgWeights[i] > 0)
+		  os.print(selpreforExtNew.selectFweights.avgWeights[i] + " ");
+	  os.println();
+	  
+	  //os.println(selpreforExt.zWeights.length);
+	  //os.println(hoffmannExt.zWeights.length);
+	  os.close();
+	  System.exit(0);
+  }
+  
   public static void main(String[] args) throws Exception{
 
 	  Properties props = StringUtils.argsToProperties(args);
@@ -364,7 +417,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  Log.severe("Using run id: " + props.getProperty(Props.RUN_ID) + " in working directory " + props.getProperty(Props.WORK_DIR));
 
 	  //testRandomArrayGen();
-	  
+	  //loadModels(props);
 	  /**
 	   * Training algorithm
 	   */
@@ -389,8 +442,6 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
     for(int label = 0; label < zWeights.length; label ++){
       double score = zWeights[label].dotProduct(vector);
       scores.setCount(label, score);
-//      if (score > 0)
-//    	  System.out.println("====================================We have a non-zero score");
     }
 
     return scores;
@@ -405,10 +456,6 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	      
 	    return score;
 	  }
-  
-  private void ComputePrYZT (List<Counter<Integer>> pr_y, List<Counter<Integer>> pr_z, List<Counter<Integer>> pr_t) {
-	  
-  }
   
   private ArrayList<Integer> randomizeVar(int sz){
 	  
@@ -471,9 +518,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  //TODO: check if the feature index mapping is unique with some examples
   }
   
-  // TODO: This function needs relooking in light of new mentionFeatureVector
-  Counter<Integer> ComputePrY_ZiTi(int [] zPredicted, Set<Integer> arg1Type, 
-		  Set<Integer> arg2Type, Set<Integer> goldPosY){
+  Counter<Integer> generateYPredicted(int [] zPredicted, Set<Integer> arg1Type, 
+		  Set<Integer> arg2Type, Set<Integer> goldPosY, boolean isTrain){
 	  
 	  Counter<Integer> yPredicted = new ClassicCounter<Integer>();
 	  
@@ -484,11 +530,19 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  }
 	  
 	  Counter<Integer> yFeats_selectNil = createSelectFeatureVector(arg1Type, arg2Type, goldPosY, true, nilIndex);
-	  double scoreSelNil = selectFweights.dotProduct(yFeats_selectNil);
+	  double scoreSelNil;
+	  if(isTrain)
+		  scoreSelNil = selectFweights.dotProduct(yFeats_selectNil);
+	  else
+		  scoreSelNil = selectFweights.avgDotProduct(yFeats_selectNil);
 	  //scoreSelNil = Math.exp(scoreSelNil);
 	  
 	  Counter<Integer> yFeats_mentionNil = createMentionFeatureVector(goldPosY, zPredictedSet, -1, -1, true, nilIndex);
-	  double scoreMenNil = mentionFweights.dotProduct(yFeats_mentionNil);
+	  double scoreMenNil;
+	  if(isTrain)
+		  scoreMenNil = mentionFweights.dotProduct(yFeats_mentionNil);
+	  else
+		  scoreMenNil = mentionFweights.avgDotProduct(yFeats_mentionNil);
 	  //scoreMenNil = Math.exp(scoreMenNil);
 	  
 	  double scoreNil = scoreSelNil + scoreMenNil;
@@ -500,35 +554,44 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 			  continue;
 			  
 		  Counter<Integer> yFeats_select = createSelectFeatureVector(arg1Type, arg2Type, goldPosY, true, yLabel);
-		  double scoreSel = selectFweights.dotProduct(yFeats_select);
+		  double scoreSel;
+		  if(isTrain)
+			  scoreSel = selectFweights.dotProduct(yFeats_select);
+		  else
+			  scoreSel = selectFweights.avgDotProduct(yFeats_select);
+		  
 		  //scoreSel = Math.exp(scoreSel);
 		  
 		  Counter<Integer> yFeats_mention = createMentionFeatureVector(goldPosY, zPredictedSet, -1, -1, true, yLabel);
-		  double scoreMen = mentionFweights.dotProduct(yFeats_mention);
+		  double scoreMen;
+		  if(isTrain)
+			  scoreMen = mentionFweights.dotProduct(yFeats_mention);
+		  else
+			  scoreMen = mentionFweights.avgDotProduct(yFeats_mention);
 		  //scoreMen = Math.exp(scoreMen);
 		
 		  double scoreLabel = scoreSel + scoreMen;
 		  
 		  if(scoreLabel > scoreNil)
-			  yPredicted.setCount(yLabel, scoreLabel);
+			  yPredicted.setCount(yLabel, Math.exp(scoreLabel));
 	  }
 	  
 	  return yPredicted;
   }
   
-  Counter<Integer> generateYPredicted(Counter<Integer> ys, double threshold) {
-	  Counter<Integer> yPredicted = new ClassicCounter<Integer>();
-	  
-	  for(String label : labelIndex){
-		  int indx = labelIndex.indexOf(label);
-		  
-		  double score = ys.getCount(indx);
-		  if(score > threshold) 
-			  yPredicted.setCount(indx, 1);
-	  }
-	  
-	  return yPredicted;
-  }
+//  Counter<Integer> generateYPredicted(Counter<Integer> ys, double threshold) {
+//	  Counter<Integer> yPredicted = new ClassicCounter<Integer>();
+//	  
+//	  for(String label : labelIndex){
+//		  int indx = labelIndex.indexOf(label);
+//		  
+//		  double score = ys.getCount(indx);
+//		  if(score > threshold) 
+//			  yPredicted.setCount(indx, 1);
+//	  }
+//	  
+//	  return yPredicted;
+//  }
   
   void generateYZTPredicted(List<Counter<Integer>> ys, List<Counter<Integer>> zs, List<Counter<Integer>> ts, 
 		  Counter<Integer> yPredicted, int [] zPredicted, int [] tPredicted) {
@@ -577,52 +640,49 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  int [] zPredicted = null;
 	  int [] tPredicted = null;
 	  
-	  if(egId % 1000 == 0)
+	  if(egId % 10000 == 0)
 		  Log.severe("Completed processing " + egId + " pairs of entities");
 	  
 	  if(ALGO_TYPE == 1){
 		  // TODO: Also at a later stage, do we need to change this to block gibbs sampling to do joint inf... Pr(Y,Z | T) ?
-		  // \hat{Y,Z} = argmax_{Y,Z} Pr_{\theta} (Y, Z | T_i, x_i)
-		  // 1. estimate Pr(Z) .. for now estimating \hat{Z}
-		  //Log.severe("Started Pr(Y,Z|T,X)");
-		  List<Counter<Integer>> pr_z = estimateZ(crtGroup); // TODO: Now calling the estimateZ function. Need to check if it has to be replaced by ComputePrZ()
+		  List<Counter<Integer>> pr_z = estimateZ(crtGroup); //To be replaced by ComputePrZ() ?
 		  zPredicted = generateZPredicted(pr_z); 
-		  // 2. estimate Pr(Y|Z,T)
-		  Counter<Integer> yPredicted = ComputePrY_ZiTi(zPredicted, arg1Type, arg2Type, goldPos);
-		  //Log.severe("Completed Pr(Y,Z|T,X)");
+		  Counter<Integer> yPredicted = generateYPredicted(zPredicted, arg1Type, arg2Type, goldPos, true);
 		  Set<Integer> [] zUpdate;
 		  
 		  if(updateCondition(yPredicted.keySet(), goldPos)){
 			  //TODO: Do we need to differentiate between nil labels and non-nil labels (as in updateZModel) ? Verify during small dataset runs
-			  //Log.severe("Started Gibbs sampling");
 			  zUpdate = generateZUpdate(goldPos, crtGroup);
-			  //Log.severe("Gibbs sampling done... Starting param updates");
 			  updateZModel(zUpdate, zPredicted, crtGroup, epoch, posUpdateStats, negUpdateStats);
 			  updateMentionWeights(zUpdate, zPredicted, goldPos, yPredicted, epoch, posUpdateStats, negUpdateStats);
 			  updateSelectWeights(goldPos, yPredicted, arg1Type, arg2Type, epoch, posUpdateStats, negUpdateStats);
-			  //Log.severe("Param updates completed");
 		  }
+		  //else{
+//			  Log.severe("Ypredicted and goldPos equal");
+//			  for(int g : goldPos){
+//				  String label = labelIndex.get(g);
+//				  Log.severe(label + " " );
+			//  }
+		  //}
 	  }
 	  
 	  else if(ALGO_TYPE == 2){ // TODO: Need to complete this ...
-		  List<Counter<Integer>> pr_y = null;
-		  List<Counter<Integer>> pr_z = null;
-		  List<Counter<Integer>> pr_t = null;
-		  
 		  Counter<Integer> yPredicted = null;
-		  
 		  Set<Integer> [] zUpdate;
-		  Set<Integer> [] tUpdate;
 		  
-		  ComputePrYZT(pr_y, pr_z, pr_t);
-		  generateYZTPredicted(pr_y, pr_z, pr_t, yPredicted, zPredicted, tPredicted);
+		  //1.0) \hat{Y,Z,T} = argmax Pr (Y, Z, T | Xi; \theta)
 		  
 		  if(updateCondition(yPredicted.keySet(), goldPos)){
+			  // 2.0) Z*, T* = argmax Pr (Z, T | Yi, Xi; \theta)
 			  
-			  //zUpdate = generateZUpdate(goldPos, pr_z);
+			  // 2.1) Pr (Z | Yi; \theta) --> gibbs sampling
 			  zUpdate = generateZUpdate(goldPos, crtGroup);
-			  tUpdate = generateTUpdate(goldPos, pr_z);
-			  updateZModel(zUpdate, zPredicted, crtGroup, epoch, posUpdateStats, negUpdateStats);
+			  
+			  // 2.2) Pr (T | Yi; \theta) --> gibbs sampling
+			  
+			  
+			  // 3.0) Update Weights
+
 		  } 
 		  
 	  }
@@ -641,12 +701,22 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 		  yPredictedSet.add(yPred);
 	  Counter<Integer> selectFeatsToSub = createSelectFeatureVector(arg1Type, arg2Type, yPredictedSet, false, -1);
 	  
-	  for (int feature : selectFeatsToAdd.keySet()){
-		  selectFweights.weights[feature] += getEta(epoch);
+	  if(selectFeatsToAdd.size() > 0){
+		  selectFweights.addToAverage();
+		  for (int feature : selectFeatsToAdd.keySet()){
+			  selectFweights.weights[feature] += getEta(epoch);
+			  posUpdateStats.incrementCount(LABEL_ALL);
+		  }
+		  selectFweights.survivalIterations = 0;
 	  }
 
-	  for (int feature : selectFeatsToSub.keySet()){
-		  selectFweights.weights[feature] -= getEta(epoch);
+	  if(selectFeatsToSub.size() > 0){
+		  selectFweights.addToAverage();
+		  for (int feature : selectFeatsToSub.keySet()){
+			  selectFweights.weights[feature] -= getEta(epoch);
+			  negUpdateStats.incrementCount(LABEL_ALL);
+		  }
+		  selectFweights.survivalIterations = 0;
 	  }
 	
 //	  for(double w : selectFweights.weights)
@@ -672,12 +742,23 @@ private void updateMentionWeights(Set<Integer>[] zUpdate, int[] zPredicted,
 	}
 	Counter<Integer> mentionFVtosub = createMentionFeatureVector(yPredictedSet, zPredictedSet, -1, -1, false, -1);
 	
-	for (int feature : mentionFVtoadd.keySet()){
-		mentionFweights.weights[feature] += getEta(epoch);
+	if(mentionFVtoadd.size() > 0){
+		mentionFweights.addToAverage();
+		for (int feature : mentionFVtoadd.keySet()){
+			mentionFweights.weights[feature] += getEta(epoch);
+			posUpdateStats.incrementCount(LABEL_ALL);
+		}
+		mentionFweights.survivalIterations = 0;
 	}
 
-	for (int feature : mentionFVtosub.keySet()){
-		mentionFweights.weights[feature] -= getEta(epoch);
+	
+	if(mentionFVtosub.size() > 0){
+		mentionFweights.addToAverage();
+		for (int feature : mentionFVtosub.keySet()){
+			mentionFweights.weights[feature] -= getEta(epoch);
+			negUpdateStats.incrementCount(LABEL_ALL);
+		}
+		mentionFweights.survivalIterations = 0;
 	}
 	
 	//TODO: To use posUpdateStats and negUpdateStats
@@ -781,15 +862,7 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 	  int [] zPredicted = new int[zPredictedSet.length];
 	  for(int i = 0; i < zPredictedSet.length; i ++){
 		  Set<Integer> zPred = zPredictedSet[i];
-		  Iterator<Integer> iter = zPred.iterator();
-		  if(iter.hasNext()) {
-			  zPredicted[i] = iter.next();
-		  }
-		  else {
-			  Log.severe("zPredicted("+i+") = " + zPred +  " ... So adding " + nilIndex);
-			  zPredicted[i] = nilIndex;
-		  }
-			  
+		  zPredicted[i] = zPred.iterator().next();  
 	  }
 	  	  
 	  if(isSingleYlabel){
@@ -803,7 +876,16 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 	  }
 	  
 	  else {
-		  Counter<Integer> yLabelsVector = createVector(yLabelsSet);
+		  Counter<Integer> yLabelsVector;
+		  //yLabelsSet can be null --- to handle this
+		  if(yLabelsSet.size() == 0){
+			  yLabelsVector = new ClassicCounter<Integer>();
+			  yLabelsVector.incrementCount(nilIndex);
+			  //Log.severe("Ajay : yLabelsSet is null");
+		  }
+		  else
+			  yLabelsVector = createVector(yLabelsSet);
+		  
 		  for(int ylabel : yLabelsVector.keySet()){
 			  for(int j = 0; j < zPredicted.length; j ++){
 				  
@@ -838,7 +920,7 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
           Set<Integer> goldPosY,
           int [][] crtGroup) {
 	  
-  	  List<Counter<Integer>> pr_z = ComputePrZ(crtGroup);
+  	  List<Counter<Integer>> pr_z = estimateZ(crtGroup); // ComputePrZ(crtGroup);
   	  int zPredicted [] = generateZPredicted(pr_z);
   		
 	  Set<Integer> [] zUpdate = ErasureUtils.uncheckedCast(new Set[pr_z.size()]);
@@ -864,10 +946,11 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 
 			  for(int zLabel = 0; zLabel < labelIndex.size(); zLabel ++){
 				  Counter<Integer> mentionFeatureVector = createMentionFeatureVector(goldPosY, zUpdate, zVar, zLabel, false, -1);  
-				  Double scoreMen = mentionFweights.dotProduct(mentionFeatureVector);
+				  double scoreMen = mentionFweights.dotProduct(mentionFeatureVector);
 				 
 				  // TODO: Temporary hack to take care of +infinity
 				  if(scoreMen >= 700){
+					  //Log.severe("Ajay ---- infinity -- " + scoreMen + Math.exp(scoreMen));
 					  scoreMen = Double.MAX_VALUE;
 					  totalScoreMen = Double.MAX_VALUE;
 				  }
@@ -880,7 +963,8 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 				  
 				  //adding the extract factors for the given zVar (i.e. Xi for the given Zi and label fixed to zLabel)
 				  double scoreExt = estimateZ(crtGroup[zVar], zLabel);
-				  scoreExt += Math.exp(scoreExt);
+				  scoreExt = Math.exp(scoreExt);
+				  totalScoreExt += scoreExt;
 				  zScoresExt.setCount(zLabel, scoreExt);
 			  }
 			  
@@ -899,14 +983,14 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 			  
 			  //TODO: Smoothing, in case of 0 counts; Need to investigate why 0 is is coming in totalScore; IS this RIGHT ?
 			  if(totalScoreMen == 0){
-				  //System.out.println("-----0 in totalScoreMen-----");
+				  //Log.severe("Ajay : -----0 in totalScoreMen-----");
 				  for(int zLabel : zScoresMen.keySet()){
 					  double score = 1.0 / labelIndex.size();
 					  zScoresMen.setCount(zLabel, score);
 				  }
 			  }
 			  if(totalScoreExt == 0){
-				  //System.out.println("-----0 in totalScoreExt-----");
+				  //Log.severe("Ajay : -----0 in totalScoreExt-----");
 				  for(int zLabel : zScoresExt.keySet()){
 					  double score = 1.0 / labelIndex.size();
 					  zScoresExt.setCount(zLabel, score);
@@ -926,7 +1010,7 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
   Set<Integer> selectBestZ(Counter<Integer> zScoresMen, Counter<Integer> zScoresExt){
 	  Set<Integer> bestZ = new HashSet<Integer>();
 	  
-	  double maxScore = Double.MIN_VALUE;
+	  double maxScore = -1; //zScoreMen and zScoreExt contain on positive values ( of type e^{})
 	  int maxZ = -1;
 	  for(int z : zScoresMen.keySet()){
 		  double score = zScoresMen.getCount(z);
@@ -943,6 +1027,11 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 		  bestZ.add(maxZ);
 	  else{
 		  System.out.println("------------------ERROR no max in Z!! -------------------");
+//		  for(int cntr : zScoresMen.keySet())
+//			  System.out.println(cntr + " : " + zScoresMen.getCount(cntr));
+//		  
+//		  for(int cntr : zScoresExt.keySet())
+//			  System.out.println(cntr + " : " + zScoresExt.getCount(cntr));
 	  }
 	  
 	  return bestZ;
@@ -1068,7 +1157,8 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
     Set<Integer> arg2Type = new HashSet<Integer>();    
     extractArgTypes(mentions, arg1Type, arg2Type);
     
-    Counter<Integer> yPredicted = ComputePrY_ZiTi(zPredicted, arg1Type, arg2Type, null);
+    boolean isTrain = false; //Inference hence the following code should call avgDotProduct instead of dotProduct
+    Counter<Integer> yPredicted = generateYPredicted(zPredicted, arg1Type, arg2Type, null, isTrain);
     
     for(int indx : yPredicted.keySet()){
     	String label = labelIndex.get(indx);
@@ -1096,7 +1186,7 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
     
     Counter<Integer> scores = new ClassicCounter<Integer>();
     for(int labelIdx = 0; labelIdx < zWeights.length; labelIdx ++){
-      double score = zWeights[labelIdx].avgDotProduct(vector); // TODO: to check why avgDotProduct be called
+      double score = zWeights[labelIdx].avgDotProduct(vector);
       //score = zWeights[labelIdx].avgDotProduct(testDatum, zFeatureIndex);
       scores.setCount(labelIdx, score);
     }
@@ -1121,6 +1211,9 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
       zw.clear();
     }
 
+    mentionFweights.clear();
+    selectFweights.clear();
+    
     FileOutputStream fos = new FileOutputStream(modelPath);
     ObjectOutputStream out = new ObjectOutputStream(fos);
 
@@ -1135,7 +1228,9 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
     
     // Write out new indices and weights learnt 
     out.writeObject(argTypeIndex);
+    assert(mentionFweights != null);
     out.writeObject(mentionFweights);
+    assert(selectFweights != null);
     out.writeObject(selectFweights);
     out.close();
   }
