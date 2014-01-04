@@ -14,6 +14,7 @@ import edu.stanford.nlp.util.Index;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.PropertiesUtils;
 import edu.stanford.nlp.util.StringUtils;
+import ilpInference.InferenceWrappers;
 
 import java.io.*;
 import java.util.*;
@@ -409,6 +410,16 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  System.exit(0);
   }
   
+  static void featureVectorTest(Properties props) throws ClassNotFoundException, IOException{
+	  String modelPath = "";
+	  SelPrefORExtractor  selpreforExtNew = (SelPrefORExtractor)SelPrefORExtractor.load(modelPath, props);
+	  Log.severe("Loaded SelPrefORExtractor - newly learnt");
+	  Index<String> labelIndex = selpreforExtNew.labelIndex;
+	  Counter<Integer> selectFvector;
+	  Counter<Integer> mentionFvector;
+	  
+  }
+  
   public static void main(String[] args) throws Exception{
 
 	  Properties props = StringUtils.argsToProperties(args);
@@ -418,6 +429,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 
 	  //testRandomArrayGen();
 	  //loadModels(props);
+	  //featureVectorTest(props);
 	  /**
 	   * Training algorithm
 	   */
@@ -627,6 +639,65 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  return prZs;
   }
   
+  private Counter<Integer> calScore(int [] mentionFeatures) {
+	  
+	  	//mentionFeatures = Xj (i.e. features of the 'j'th mention)
+	    Counter<Integer> vector = new ClassicCounter<Integer>();
+	    for(int d: mentionFeatures) vector.incrementCount(d);
+
+	    Counter<Integer> scores = new ClassicCounter<Integer>();
+	    
+	    for(int zLabel = 0; zLabel < zWeights.length; zLabel ++){
+	    	// zLabel = i
+	    	double score = zWeights[zLabel].dotProduct(vector);
+	    
+	    	int key = (zLabel * labelIndex.size()) + zLabel; 
+	    	score += mentionFweights.weights[key];
+	    	
+	    	// score of Xj taking on label i = Sj_i
+	    	scores.setCount(zLabel, score);
+	    }
+
+	    return scores;
+  }
+  
+  List<Counter<Integer>> computeScores(int [][] crtGroup){
+	  // scores for all mentions Xj (j \in numMentions) taking different labels i \in R
+	  List<Counter<Integer>> scores = new ArrayList<Counter<Integer>>();
+	  
+	  for(int [] mention: crtGroup) {
+		  // Xj = features of mention j; Calculating scores for Xj taking different labels i \in R = Sj_i 
+	      scores.add(calScore(mention));
+	  }
+	  
+	  return scores;
+  }
+  
+  Counter<Integer> computeTypeBiasScores(Set<Integer> arg1Type, Set<Integer> arg2Type){
+	  Counter<Integer> typeBiasScores = new ClassicCounter<Integer>();
+	  
+	  // Wi_0
+	  Counter<Integer> selectFeatureVectorNil = createSelectFeatureVector(arg1Type, arg2Type, null, true, nilIndex);
+	  double scoreNil = selectFweights.dotProduct(selectFeatureVectorNil);
+	  
+	  for(String yLabel : labelIndex){
+		  int y = labelIndex.indexOf(yLabel);
+		  
+		  if(y == nilIndex)
+			  continue;
+		  
+		  // Wi_1
+		  Counter<Integer> selectFeatureVector = createSelectFeatureVector(arg1Type, arg2Type, null, true, y);
+		  double score = selectFweights.dotProduct(selectFeatureVector);
+		  
+		  // Wi_1 - Wi_0 for a given 'i' = y (where i is the labelIndex of relation y)
+		  typeBiasScores.setCount(y, score-scoreNil);
+		  
+	  }
+	  
+	  return typeBiasScores;
+  }
+  
   private void trainJointly(
 		  int [][] crtGroup,
           Set<Integer> goldPos,
@@ -645,9 +716,13 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  
 	  if(ALGO_TYPE == 1){
 		  // TODO: Also at a later stage, do we need to change this to block gibbs sampling to do joint inf... Pr(Y,Z | T) ?
-		  List<Counter<Integer>> pr_z = estimateZ(crtGroup); //To be replaced by ComputePrZ() ?
-		  zPredicted = generateZPredicted(pr_z); 
-		  Counter<Integer> yPredicted = generateYPredicted(zPredicted, arg1Type, arg2Type, goldPos, true);
+		  //List<Counter<Integer>> pr_z = estimateZ(crtGroup); //To be replaced by ComputePrZ() ?
+		  //zPredicted = generateZPredicted(pr_z); 
+		  //Counter<Integer> yPredicted = generateYPredicted(zPredicted, arg1Type, arg2Type, goldPos, true);
+		  List<Counter<Integer>> scores = computeScores(crtGroup);
+		  Counter<Integer> typeBiasScores = computeTypeBiasScores(arg1Type, arg2Type);
+		  InferenceWrappers ilpInfHandle = new InferenceWrappers();
+		  Counter<Integer> yPredicted = ilpInfHandle.generateYPredictedILP(scores, crtGroup.length, labelIndex, typeBiasScores); //ilpInfHandle.generateYPredictedILP(crtGroup, goldPos, arg1Type, arg2Type);
 		  Set<Integer> [] zUpdate;
 		  
 		  if(updateCondition(yPredicted.keySet(), goldPos)){
@@ -1036,7 +1111,7 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 	  
 	  return bestZ;
   }
-
+  
   private List<Counter<Integer>> estimateZ(int [][] datums) {
     List<Counter<Integer>> zs = new ArrayList<Counter<Integer>>();
     for(int [] datum: datums) {
