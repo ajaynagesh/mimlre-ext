@@ -1,5 +1,6 @@
 package ilpInference;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.javailp.Constraint;
@@ -10,19 +11,22 @@ import net.sf.javailp.Result;
 import net.sf.javailp.Solver;
 import net.sf.javailp.SolverFactory;
 import net.sf.javailp.SolverFactoryLpSolve;
-import edu.stanford.nlp.stats.ClassicCounter;
 import edu.stanford.nlp.stats.Counter;
 import edu.stanford.nlp.util.Index;
 
 public class InferenceWrappers {
 	
-	public Counter<Integer> generateYPredictedILP(List<Counter<Integer>> scores, 
+	public YZPredicted generateYZPredictedILP(List<Counter<Integer>> scores, 
 												  int numOfMentions, 
 												  Index<String> yLabelIndex, 
 												  Counter<Integer> typeBiasScores){
 		
-		Counter<Integer> yPredicted = new ClassicCounter<Integer>();
-		System.out.println("Calling ILP inference");
+		YZPredicted predictedVals = new YZPredicted(numOfMentions);
+		
+		Counter<Integer> yPredicted = predictedVals.getYPredicted();
+		int [] zPredicted = predictedVals.getZPredicted();
+		
+		System.out.println("Calling ILP inference for Pr (Y,Z | X,T)");
 		
 		int numConstraints = 0;
 		
@@ -62,8 +66,9 @@ public class InferenceWrappers {
 		/////////// Constraints ------------------------------------------
 
 		/// 1. equality constraints \Sum_i z_ji = 1 \forall j
-		Linear constraint = new Linear();
+		Linear constraint;
 		for(int mentionIdx = 0; mentionIdx < numOfMentions; mentionIdx ++){
+			constraint = new Linear();
 			for(String yLabel : yLabelIndex){
 				int y = yLabelIndex.indexOf(yLabel);
 				String var = "z"+mentionIdx+"_"+"y"+y;
@@ -81,8 +86,8 @@ public class InferenceWrappers {
 		
 		/// 2. inequality constraint -- 1 ... z_ji <= y_i \forall j,i
 		for(int mentionIdx = 0; mentionIdx < numOfMentions; mentionIdx ++){
-			constraint = new Linear();
 			for(String yLabel : yLabelIndex){
+				constraint = new Linear();
 				int y = yLabelIndex.indexOf(yLabel);
 				String var1 = "z"+mentionIdx+"_"+"y"+y;
 				String var2 = "y"+y;
@@ -127,10 +132,33 @@ public class InferenceWrappers {
 		Solver solver = factory.get();
 		Result result = solver.solve(problem);
 		
-		System.out.println("Result : " + result);
+		//System.out.println("Result : " + result);
 		
-		System.exit(0);
-		return yPredicted;
+		for(Object var : problem.getVariables()) {
+			if(result.containsVar(var) && (result.get(var).intValue() == 1)){
+				if(var.toString().startsWith("y")) {
+					//System.out.println(var + " = " + result.get(var) + " : Y-vars");
+					int y = Integer.parseInt(var.toString().substring(1));
+					yPredicted.setCount(y, result.get(var).doubleValue());
+				}
+				else if(var.toString().startsWith("z")) { 
+					String [] split = var.toString().split("_");
+					//System.out.println(split[0]);
+					int mentionIdx = Integer.parseInt(split[0].toString().substring(1));
+					//System.out.println(split[1]);
+					int ylabel = Integer.parseInt(split[1].toString().substring(1));
+					zPredicted[mentionIdx] = ylabel;
+					
+					//System.out.println(var + " = " + result.get(var) + " : Z-vars");
+					
+				}
+			}
+		}
+		
+		//System.out.println(yPredicted);
+		//System.exit(0);
+		
+		return predictedVals;
 	}
 
 }

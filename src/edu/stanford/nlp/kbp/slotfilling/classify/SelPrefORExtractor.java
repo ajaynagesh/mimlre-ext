@@ -15,6 +15,7 @@ import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.PropertiesUtils;
 import edu.stanford.nlp.util.StringUtils;
 import ilpInference.InferenceWrappers;
+import ilpInference.YZPredicted;
 
 import java.io.*;
 import java.util.*;
@@ -697,7 +698,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	  
 	  return typeBiasScores;
   }
-  
+   
   private void trainJointly(
 		  int [][] crtGroup,
           Set<Integer> goldPos,
@@ -722,7 +723,11 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 		  List<Counter<Integer>> scores = computeScores(crtGroup);
 		  Counter<Integer> typeBiasScores = computeTypeBiasScores(arg1Type, arg2Type);
 		  InferenceWrappers ilpInfHandle = new InferenceWrappers();
-		  Counter<Integer> yPredicted = ilpInfHandle.generateYPredictedILP(scores, crtGroup.length, labelIndex, typeBiasScores); //ilpInfHandle.generateYPredictedILP(crtGroup, goldPos, arg1Type, arg2Type);
+		  //Counter<Integer> yPredicted = ilpInfHandle.generateYZPredictedILP(scores, crtGroup.length, labelIndex, typeBiasScores, zPredicted);
+		  YZPredicted predictedVals = ilpInfHandle.generateYZPredictedILP(scores, crtGroup.length, labelIndex, typeBiasScores);
+		  Counter<Integer> yPredicted = predictedVals.getYPredicted();
+		  zPredicted = predictedVals.getZPredicted();
+		  System.out.println(yPredicted);
 		  Set<Integer> [] zUpdate;
 		  
 		  if(updateCondition(yPredicted.keySet(), goldPos)){
