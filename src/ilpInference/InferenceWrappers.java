@@ -2,6 +2,7 @@ package ilpInference;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import net.sf.javailp.Constraint;
 import net.sf.javailp.Linear;
@@ -12,9 +13,16 @@ import net.sf.javailp.Solver;
 import net.sf.javailp.SolverFactory;
 import net.sf.javailp.SolverFactoryLpSolve;
 import edu.stanford.nlp.stats.Counter;
+import edu.stanford.nlp.util.ErasureUtils;
 import edu.stanford.nlp.util.Index;
 
 public class InferenceWrappers {
+	
+	public Set<Integer> [] generateZUpdateILP(int numMentions, Set<Integer> goldPos){
+		Set<Integer> [] zUpdate = ErasureUtils.uncheckedCast(new Set[numMentions]);
+		
+		return zUpdate;
+	}
 	
 	public YZPredicted generateYZPredictedILP(List<Counter<Integer>> scores, 
 												  int numOfMentions, 

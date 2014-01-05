@@ -732,7 +732,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 		  
 		  if(updateCondition(yPredicted.keySet(), goldPos)){
 			  //TODO: Do we need to differentiate between nil labels and non-nil labels (as in updateZModel) ? Verify during small dataset runs
-			  zUpdate = generateZUpdate(goldPos, crtGroup);
+			  //zUpdate = generateZUpdate(goldPos, crtGroup);
+			  zUpdate = ilpInfHandle.generateZUpdateILP(crtGroup.length, goldPos);
 			  updateZModel(zUpdate, zPredicted, crtGroup, epoch, posUpdateStats, negUpdateStats);
 			  updateMentionWeights(zUpdate, zPredicted, goldPos, yPredicted, epoch, posUpdateStats, negUpdateStats);
 			  updateSelectWeights(goldPos, yPredicted, arg1Type, arg2Type, epoch, posUpdateStats, negUpdateStats);
