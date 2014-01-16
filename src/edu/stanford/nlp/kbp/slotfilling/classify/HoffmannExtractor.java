@@ -142,6 +142,9 @@ public class HoffmannExtractor extends JointlyTrainedRelationExtractor {
     nilIndex = labelIndex.indexOf(RelationMention.UNRELATED);
     zFeatureIndex = dataset.featureIndex();
 
+//    System.out.println(labelIndex);
+//    System.exit(0);
+    
     zWeights = new LabelWeights[labelIndex.size()];
     for(int i = 0; i < zWeights.length; i ++)
       zWeights[i] = new LabelWeights(dataset.featureIndex().size());
@@ -161,7 +164,7 @@ public class HoffmannExtractor extends JointlyTrainedRelationExtractor {
         int [][] crtGroup = dataset.getDataArray()[i];
         Set<Integer> goldPos = dataset.getPositiveLabelsArray()[i];
 
-        trainJointly(crtGroup, goldPos, posUpdateStats, negUpdateStats);
+        trainJointly(crtGroup, goldPos, posUpdateStats, negUpdateStats, i, t);
 
         // update the number of iterations an weight vector has survived
         for(LabelWeights zw: zWeights) zw.updateSurvivalIterations();
@@ -181,7 +184,10 @@ public class HoffmannExtractor extends JointlyTrainedRelationExtractor {
           int [][] crtGroup,
           Set<Integer> goldPos,
           Counter<Integer> posUpdateStats,
-          Counter<Integer> negUpdateStats) {
+          Counter<Integer> negUpdateStats,
+          int egId,
+          int epoch) {
+	  
     // all local predictions using local Z models
     List<Counter<Integer>> zs = estimateZ(crtGroup);
     // best predictions for each mention
@@ -190,9 +196,34 @@ public class HoffmannExtractor extends JointlyTrainedRelationExtractor {
     // yPredicted - Y labels predicted using the current Zs (full inference)
     Counter<Integer> yPredicted = estimateY(zPredicted);
 
+//    System.out.print("epoch: " + epoch +  "; egid: " + egId + "; z=[");
+//	  for(int z : zPredicted){
+//		  if(z == nilIndex)
+//			  System.out.print(z + " ");
+//	  }
+//	  System.out.println("];");
+//	  System.out.print(" y={");
+//	  for(int y : yPredicted.keySet())
+//		  System.out.print(y + " ");
+//	  System.out.println("}");
+    
     if(updateCondition(yPredicted.keySet(), goldPos)){
       // conditional inference
       Set<Integer> [] zUpdate = generateZUpdate(goldPos, zs);
+      
+//      boolean someznil = false;
+//      for(Set<Integer> z : zUpdate){
+//    	  if(z.contains(nilIndex))
+//    		  someznil = true;
+//    		  
+//      }
+//      if(someznil){
+//    	  System.out.println("Nil Z");
+//    	  for(Set<Integer> z : zUpdate)
+//    		  System.out.print(z + " ");
+//    	  System.out.println();
+//      }
+      
       // update weights
       updateZModel(zUpdate, zPredicted, crtGroup, posUpdateStats, negUpdateStats);
     }
@@ -366,7 +397,7 @@ public class HoffmannExtractor extends JointlyTrainedRelationExtractor {
     }
 
     // there are more mentions than relations
-
+    
     // for each Y, pick the highest edge from an unmapped mention
     Map<Integer, List<Edge>> edgesByY = byY(edges);
     for(Integer y: goldPos) {
@@ -392,7 +423,7 @@ public class HoffmannExtractor extends JointlyTrainedRelationExtractor {
         }
       }
     }
-
+    
     return zUpdate;
   }
 
@@ -440,6 +471,8 @@ public class HoffmannExtractor extends JointlyTrainedRelationExtractor {
       if(cands.size() > 0){
         bestZ = pickBestLabel(cands);
       }
+      else
+    	  System.out.println("Entering this piece of code ... can it ?");
       bestZs[i] = bestZ;
     }
 
@@ -469,8 +502,8 @@ public class HoffmannExtractor extends JointlyTrainedRelationExtractor {
         if(o1.second() < o2.second()) return 1;
 
         // this is an arbitrary decision to disambiguate ties
-        if(o1.first() > o2.first()) return -1;
-        if(o1.first() < o2.first()) return 1;
+        if(o1.first() > o2.first()) return 1;
+        if(o1.first() < o2.first()) return -1;
         return 0;
       }
     });

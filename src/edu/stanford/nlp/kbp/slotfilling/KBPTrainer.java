@@ -325,6 +325,11 @@ public KBPTrainer(Properties props) throws Exception {
     	String entityVal = entitiesIdNameMap().get(d.entityId());
     	String slotVal = d.slotValue().replace('_', ' ');
     	dataset.addDatum(d.yPos(), d.yNeg(), d.datums(), entityVal, d.entityType(), slotVal, d.slotTypes());
+//    	System.out.print("dataset_info:" + entityVal + "-" + slotVal + " -- " + d.entityType()+"-");
+//    	for(String s : d.slotTypes())
+//    		System.out.print(s+":");
+//    	System.out.print(" :: " + d.yPos());
+//    	System.out.println();
     }
     datums = null; // can be GCed now
     
@@ -597,7 +602,7 @@ public KBPTrainer(Properties props) throws Exception {
       // default: train followed by test
       // this is the former block enabled by Props.TRAINER
       train(props);
-      if(EVALUATE_AFTER_TRAIN) evaluate(props);
+      //if(EVALUATE_AFTER_TRAIN) evaluate(props);
     }
   }
 

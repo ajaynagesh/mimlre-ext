@@ -6,7 +6,6 @@ serializedRelationExtractorPath = kbp_relation_model_mimlre_small
 work.dir = small_dataset/corpora
 trainer.model = atleastonce
 
-
 #
 # BaselineNLProcessor settings
 #
@@ -135,8 +134,9 @@ filter = all
 inference.type = stable
 
 # AtLeastOnce settings (tuned on dev)
-perceptron.epochs = 5
-
+perceptron.epochs = 2
+inference.epochs = 1
+algo.type = 1
 
 #
 # KBPTrainer/Tester settings
