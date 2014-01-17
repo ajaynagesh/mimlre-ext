@@ -723,7 +723,7 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 	    	}
 	    }
 	    
-		if(goldPos != null && goldPos.size() == 0){ //goldPos is empty that means relation label is -nil-
+		if(goldPos != null){ //Also calculate the nil score when goldPos is given
 			int zLabel = nilIndex;
 			// score of Xj taking on label i \in Y' = Sj_i
 			double score = zWeights[zLabel].dotProduct(vector);
@@ -822,10 +822,10 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 			  //TODO: Do we need to differentiate between nil labels and non-nil labels (as in updateZModel) ? Verify during small dataset runs
 			  //zUpdate = generateZUpdate(goldPos, crtGroup);
 			  
-			  if(goldPos.size() - crtGroup.length > 0){
-				  System.out.println("How come ? " + "data : " + crtGroup + " goldPos : " + goldPos + " EgId : " + egId + " ... skipping ...");
-				  return;
-			  }
+//			  if(goldPos.size() - crtGroup.length > 0){
+//				  System.out.println("How come ? " + "data : " + crtGroup + " goldPos : " + goldPos + " EgId : " + egId + " ... skipping ...");
+//				  return;
+//			  }
 			  
 			  List<Counter<Integer>> scoresWithYgiven = computeScores(crtGroup, goldPos);
 			  zUpdate = ilpInfHandle.generateZUpdateILP(scoresWithYgiven, crtGroup.length, goldPos, nilIndex);

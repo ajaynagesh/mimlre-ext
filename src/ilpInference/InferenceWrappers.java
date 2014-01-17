@@ -19,7 +19,7 @@ import edu.stanford.nlp.util.Index;
 
 public class InferenceWrappers {
 	
-	public Set<Integer> [] generateZUpdateILP(List<Counter<Integer>> scores, 
+	public Set<Integer> [] generateZUpdateILP(List<Counter<Integer>> scoresYGiven, 
 											  int numOfMentions, 
 											  Set<Integer> goldPos,
 											  int nilIndex){
@@ -43,7 +43,7 @@ public class InferenceWrappers {
 		if(goldPos.size() > numOfMentions){
 			//////////////Objective --------------------------------------
 			for(int mentionIdx = 0; mentionIdx < numOfMentions; mentionIdx ++){
-				Counter<Integer> score = scores.get(mentionIdx);
+				Counter<Integer> score = scoresYGiven.get(mentionIdx);
 				for(int label : score.keySet()){
 					if(label == nilIndex)
 						continue; 
@@ -87,7 +87,7 @@ public class InferenceWrappers {
 		else {
 			//////////////Objective --------------------------------------
 			for(int mentionIdx = 0; mentionIdx < numOfMentions; mentionIdx ++){
-				Counter<Integer> score = scores.get(mentionIdx);
+				Counter<Integer> score = scoresYGiven.get(mentionIdx);
 				for(int label : score.keySet()){
 					String var = "z"+mentionIdx+"_"+"y"+label;
 					double coeff = score.getCount(label);
@@ -102,43 +102,21 @@ public class InferenceWrappers {
 			/// 1. equality constraints \Sum_{i \in Y'} z_ji = 1 \forall j
 			for(int mentionIdx = 0; mentionIdx < numOfMentions; mentionIdx ++){
 				constraint = new Linear();
-				if(goldPos.size() == 0) { // if goldPos is [] ==> -nil- index
-					String var = "z"+mentionIdx+"_"+"y"+nilIndex;
+				for(int y : goldPos){
+					String var = "z"+mentionIdx+"_"+"y"+y;
 					constraint.add(1, var);
-					
-					//System.out.print("z"+mentionIdx+"_"+"y"+y + " + ");
-				}
-				else {
-					for(int y : goldPos){
-						String var = "z"+mentionIdx+"_"+"y"+y;
-						constraint.add(1, var);
 						
-						//System.out.print("z"+mentionIdx+"_"+"y"+y + " + ");				
-					}
+					//System.out.print("z"+mentionIdx+"_"+"y"+y + " + ");				
 				}
+				constraint.add(1, "z"+mentionIdx+"_"+"y"+nilIndex); //nil index added to constraint
 				
 				problem.add(constraint, "=", 1);
 				//System.out.println(" 0 = "+ "1");
 			}
-
-		}
-				
-		
-		
-		//System.out.println("\n-----------------");
-		/// 2. inequality constraint ===>  1 <= \Sum_j z_ji \forall i \in Y'  {lhs=1, since we consider only Y' i.e goldPos}
-		/////////// ------------------------------------------------------
-		if(goldPos.size() == 0){ // if goldPos is [] ==> -nil- index
-			constraint = new Linear();
-			for(int mentionIdx = 0; mentionIdx < numOfMentions; mentionIdx ++){
-				String var = "z"+mentionIdx+"_"+"y"+nilIndex;
-				constraint.add(1, var);
-				//System.out.print("z"+mentionIdx+"_"+"y"+y + " + ");
-			}
-			problem.add(constraint, ">=", 1);
-			//System.out.println(" 0 - " + "y"+y +" >= 0" );
-		}
-		else {
+			
+			//System.out.println("\n-----------------");
+			/// 2. inequality constraint ===>  1 <= \Sum_j z_ji \forall i \in Y'  {lhs=1, since we consider only Y' i.e goldPos}
+			/////////// ------------------------------------------------------
 			for(int y : goldPos){
 				constraint = new Linear();
 				for(int mentionIdx = 0; mentionIdx < numOfMentions; mentionIdx ++){
@@ -149,9 +127,9 @@ public class InferenceWrappers {
 				problem.add(constraint, ">=", 1);
 				//System.out.println(" 0 - " + "y"+y +" >= 0" );
 			}
+			/////////// ------------------------------------------------------
 		}
-		/////////// ------------------------------------------------------
-		
+				
 		// Set the types of all variables to Binary
 		for(Object var : problem.getVariables())
 			problem.setVarType(var, Boolean.class);
@@ -185,7 +163,6 @@ public class InferenceWrappers {
 
 		}
 		
-		int numOfUpdates = 0;
 		for(Object var : problem.getVariables()) {
 			if(result.containsVar(var) && (result.get(var).intValue() == 1)){
 				String [] split = var.toString().split("_");
@@ -193,20 +170,11 @@ public class InferenceWrappers {
 				int mentionIdx = Integer.parseInt(split[0].toString().substring(1));
 				//System.out.println(split[1]);
 				int ylabel = Integer.parseInt(split[1].toString().substring(1));
-				zUpdate[mentionIdx].add(ylabel);
-				numOfUpdates++;
+				if(ylabel != nilIndex)
+					zUpdate[mentionIdx].add(ylabel);
 			}			
 		}
-		
-		if (numOfUpdates != numOfMentions)
-		{
-			System.out.println(result);
-			System.out.println("----------ERROR-----------");
-			System.out.println("GOLDPOS : " + goldPos);
-		}
-		
-		//assert (numOfUpdates == numOfMentions); 
-		
+	
 		return zUpdate;
 	}
 	
