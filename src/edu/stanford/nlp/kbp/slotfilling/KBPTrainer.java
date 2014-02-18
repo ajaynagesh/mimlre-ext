@@ -325,14 +325,15 @@ public KBPTrainer(Properties props) throws Exception {
     	String entityVal = entitiesIdNameMap().get(d.entityId());
     	String slotVal = d.slotValue().replace('_', ' ');
     	dataset.addDatum(d.yPos(), d.yNeg(), d.datums(), entityVal, d.entityType(), slotVal, d.slotTypes());
-//    	System.out.print("dataset_info:" + entityVal + "-" + slotVal + " -- " + d.entityType()+"-");
+//    	System.out.print(d.entityType()+"/");
+//    	Set<String> slottype = new HashSet<String>();
 //    	for(String s : d.slotTypes())
-//    		System.out.print(s+":");
-//    	System.out.print(" :: " + d.yPos());
+//    		slottype.add(s);
+//    	System.out.print(slottype);
+//    	System.out.print("/" + d.yPos());
 //    	System.out.println();
     }
     datums = null; // can be GCed now
-    
     //
     // feature selection
     //

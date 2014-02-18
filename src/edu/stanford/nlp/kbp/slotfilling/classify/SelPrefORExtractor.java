@@ -803,7 +803,8 @@ public class SelPrefORExtractor extends JointlyTrainedRelationExtractor {
 		  Counter<Integer> typeBiasScores = null; //computeTypeBiasScores(arg1Type, arg2Type, false);
 		  InferenceWrappers ilpInfHandle = new InferenceWrappers();
 		  //Counter<Integer> yPredicted = ilpInfHandle.generateYZPredictedILP(scores, crtGroup.length, labelIndex, typeBiasScores, zPredicted);
-		  YZPredicted predictedVals = ilpInfHandle.generateYZPredictedILP(scores, crtGroup.length, labelIndex, typeBiasScores, egId, epoch, nilIndex);
+		  //YZPredicted predictedVals = ilpInfHandle.generateYZPredictedILP(scores, crtGroup.length, labelIndex, typeBiasScores, egId, epoch, nilIndex);
+		  YZPredicted predictedVals = ilpInfHandle.generateYZPredictedILPnoisyOr(scores, crtGroup.length, labelIndex, typeBiasScores, egId, epoch, nilIndex);
 		  Counter<Integer> yPredicted = predictedVals.getYPredicted();
 		  zPredicted = predictedVals.getZPredicted();
 		  Set<Integer> [] zUpdate;
@@ -1431,27 +1432,30 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
    * Our inference function
    * Currently coding Pr(Y,Z|T) equivalent to the one used in training
    */
-  /*
+  
   @Override
   public Counter<String> classifyMentions(List<Collection<String>> mentions) {
 	  Counter<String> yScores = new ClassicCounter<String>();
 	 
-	  Set<Integer> arg1Type = new HashSet<Integer>();
-	  Set<Integer> arg2Type = new HashSet<Integer>();    
-	  extractArgTypes(mentions, arg1Type, arg2Type);
+	  //Set<Integer> arg1Type = new HashSet<Integer>();
+	  //Set<Integer> arg2Type = new HashSet<Integer>();    
+	  //extractArgTypes(mentions, arg1Type, arg2Type);
 	  
 	  List<Counter<Integer>> scoreInf = computeScoresInf(mentions);
 	  Counter<Integer> typeBiasScores = null; //computeTypeBiasScores(arg1Type, arg2Type, true);
 	  InferenceWrappers ilpInfHandle = new InferenceWrappers();
 	  
-	  YZPredicted predictedVals = ilpInfHandle.generateYZPredictedILP(scoreInf, mentions.size(), labelIndex, typeBiasScores, -1, -1);
+	  //YZPredicted predictedVals = ilpInfHandle.generateYZPredictedILP(scoreInf, mentions.size(), labelIndex, typeBiasScores, -1, -1, nilIndex);
+	  YZPredicted predictedVals = ilpInfHandle.generateYZPredictedILPnoisyOr(scoreInf, mentions.size(), labelIndex, typeBiasScores, -1, -1, nilIndex);
 	  Counter<Integer> yPredicted = predictedVals.getYPredicted();
 	  int [] zPredicted = predictedVals.getZPredicted();
 	  
 	  // Compute the yScores 
 	  for(int y_i : yPredicted.keySet()){
-		  if(y_i == nilIndex) // The calling function mandates not to predict nil label
+		  if(y_i == nilIndex) {// The calling function mandates not to predict nil label
+			  System.out.println("NIL INDEX IS NOT SET .. THIS SHOULD NOT BE REACHED ... BUG");
 			  continue;
+		  }
 		  double yscore = 0.0; //typeBiasScores.getCount(y_i);
 		  for(int j = 0; j < zPredicted.length; j ++){
 			  int z = zPredicted[j];
@@ -1463,8 +1467,9 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 	  }
 	  
 	  return yScores;
-  }*/
+  }
   
+  /*
   @Override
   public Counter<String> classifyMentions(List<Collection<String>> mentions) {
 	    Counter<String> bestZScores = new ClassicCounter<String>();
@@ -1500,6 +1505,7 @@ Set<Integer> [] generateTUpdate(Set<Integer> goldPos,List<Counter<Integer>> zs)
 	    }
 	    return scores;
 	  }
+	  */
   
 //  public Counter<String> classifyMentions(List<Collection<String>> mentions) {
 //    Counter<String> yScores = new ClassicCounter<String>();
