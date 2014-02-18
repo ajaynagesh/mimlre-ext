@@ -1,0 +1,454 @@
+SF255:org:top_members/employees [1933]
+SF590:per:title [971, 969]
+SF590:per:employee_of [765, 757]
+SF252:org:stateorprovince_of_headquarters
+SF252:org:political/religious_affiliation [1186]
+SF252:org:top_members/employees [1238]
+SF252:org:founded_by [1104]
+SF592:per:date_of_birth
+SF592:per:city_of_birth
+SF592:per:origin [717]
+SF592:per:title [1152, 719, 721, 722, 723]
+SF592:per:employee_of [715, 714, 716, 1000099]
+SF593:per:origin [946]
+SF593:per:title [950, 951]
+SF518:org:city_of_headquarters
+SF518:org:subsidiaries [1000013]
+SF251:org:stateorprovince_of_headquarters
+SF251:org:city_of_headquarters
+SF251:org:political/religious_affiliation [1849]
+SF251:org:top_members/employees [1864]
+SF594:per:origin [564]
+SF594:per:title [567, 573, 571]
+SF594:per:member_of [560, 556]
+SF250:org:website
+SF250:org:top_members/employees [1509]
+SF250:org:parents [1507]
+SF517:org:stateorprovince_of_headquarters
+SF517:org:members [747, 746, 749, 748]
+SF595:per:age
+SF595:per:alternate_names [782, 781]
+SF595:per:countries_of_residence [792]
+SF595:per:charges [784]
+SF519:org:country_of_headquarters
+SF519:org:subsidiaries [1000015]
+SF596:per:religion
+SF596:per:origin [36, 37]
+SF596:per:title [64, 65, 66]
+SF596:per:member_of [34, 30]
+SF596:per:employee_of [26, 29, 28]
+SF510:org:country_of_headquarters
+SF510:org:alternate_names [812]
+SF510:org:top_members/employees [1000011]
+SF512:org:country_of_headquarters
+SF512:org:subsidiaries [495, 496]
+SF587:per:employee_of [701]
+SF586:per:stateorprovinces_of_residence [21]
+SF586:per:title [1158, 24]
+SF589:per:origin [1088]
+SF589:per:countries_of_residence [745]
+SF589:per:title [1093, 1095]
+SF588:per:title [226]
+SF588:per:employee_of [207, 206]
+SF247:org:founded
+SF247:org:country_of_headquarters
+SF247:org:top_members/employees [1680, 1681, 1682, 1679, 1678]
+SF248:per:stateorprovince_of_birth
+SF248:per:city_of_birth
+SF248:per:cities_of_residence [1160]
+SF248:per:spouse [1171]
+SF245:per:age
+SF245:per:country_of_birth
+SF245:per:stateorprovince_of_birth
+SF245:per:city_of_birth
+SF245:per:origin [1994, 1993]
+SF245:per:countries_of_residence [1989, 1988]
+SF245:per:stateorprovinces_of_residence [2001]
+SF245:per:cities_of_residence [1986]
+SF264:org:parents [1545]
+SF263:org:stateorprovince_of_headquarters
+SF263:org:city_of_headquarters
+SF263:org:website
+SF260:org:stateorprovince_of_headquarters
+SF260:org:city_of_headquarters
+SF260:org:political/religious_affiliation [1474, 1473]
+SF260:org:top_members/employees [1477]
+SF509:org:stateorprovince_of_headquarters
+SF509:org:city_of_headquarters
+SF509:org:alternate_names [863]
+SF509:org:subsidiaries [938]
+SF508:org:country_of_headquarters
+SF508:org:alternate_names [127]
+SF508:org:parents [167]
+SF261:org:founded_by [1299]
+SF505:org:country_of_headquarters
+SF505:org:parents [100]
+SF502:org:parents [1173]
+SF598:per:title [124, 123]
+SF598:per:employee_of [1000105]
+SF597:per:city_of_birth
+SF597:per:origin [868]
+SF597:per:stateorprovinces_of_residence [895]
+SF597:per:cities_of_residence [849]
+SF597:per:title [897, 896]
+SF256:org:country_of_headquarters
+SF256:org:stateorprovince_of_headquarters
+SF256:org:city_of_headquarters
+SF257:org:number_of_employees/members
+SF257:org:stateorprovince_of_headquarters
+SF257:org:city_of_headquarters
+SF257:org:alternate_names [1511]
+SF257:org:top_members/employees [1518]
+SF258:org:country_of_headquarters
+SF259:org:country_of_headquarters
+SF259:org:stateorprovince_of_headquarters
+SF259:org:alternate_names [1814, 1810]
+SF259:org:political/religious_affiliation [1880]
+SF571:per:stateorprovinces_of_residence [160]
+SF571:per:cities_of_residence [149, 150]
+SF571:per:title [1000073]
+SF571:per:employee_of [152, 153]
+SF273:per:date_of_birth
+SF273:per:title [1434]
+SF273:per:employee_of [1432]
+SF572:per:title [426]
+SF572:per:employee_of [422]
+SF272:per:city_of_birth
+SF272:per:origin [1291]
+SF272:per:cities_of_residence [1285]
+SF272:per:title [1292]
+SF272:per:employee_of [1288, 1289]
+SF573:per:employee_of [819]
+SF574:per:date_of_death
+SF574:per:country_of_death
+SF574:per:city_of_death
+SF574:per:origin [930]
+SF574:per:countries_of_residence [671, 672]
+SF574:per:title [1055, 1054]
+SF574:per:member_of [927]
+SF574:per:employee_of [923, 1000078]
+SF574:per:siblings [947]
+SF574:per:other_family [943, 944]
+SF270:per:title [2016, 2018, 2020, 2015]
+SF270:per:employee_of [2011, 2008, 2009]
+SF275:per:stateorprovinces_of_residence [1211]
+SF275:per:cities_of_residence [1203]
+SF275:per:member_of [1208]
+SF275:per:employee_of [1206, 1205]
+SF274:per:alternate_names [2143]
+SF274:per:title [1749]
+SF274:per:employee_of [1739, 1742]
+SF569:per:city_of_birth
+SF569:per:date_of_death
+SF569:per:cities_of_residence [639]
+SF569:per:title [766, 767]
+SF569:per:employee_of [736]
+SF569:per:spouse [756]
+SF569:per:children [638]
+SF269:per:age
+SF269:per:employee_of [1385, 1386]
+SF568:per:title [381, 380, 384]
+SF568:per:employee_of [279, 282, 280]
+SF267:per:age
+SF267:per:stateorprovinces_of_residence [1884]
+SF267:per:title [1903]
+SF267:per:member_of [1878]
+SF267:per:employee_of [1874, 1873, 1872, 1876]
+SF268:per:age
+SF268:per:country_of_birth
+SF268:per:origin [1591, 1590]
+SF268:per:countries_of_residence [1562]
+SF268:per:title [1618, 1621, 1622]
+SF268:per:member_of [1582, 1583, 1589]
+SF268:per:employee_of [1581]
+SF268:per:spouse [1614]
+SF268:per:siblings [1611]
+SF564:per:age
+SF566:per:origin [488]
+SF566:per:title [516, 512, 515]
+SF566:per:employee_of [486, 483]
+SF585:per:countries_of_residence [646]
+SF585:per:title [663]
+SF585:per:member_of [652]
+SF585:per:employee_of [650]
+SF281:per:age
+SF281:per:stateorprovinces_of_residence [1737]
+SF281:per:cities_of_residence [1729]
+SF281:per:schools_attended [1736]
+SF281:per:title [1745, 1746]
+SF281:per:charges [1725]
+SF284:per:date_of_birth
+SF284:per:age
+SF284:per:cities_of_residence [1228]
+SF284:per:parents [1234, 1235]
+SF284:per:siblings [1236]
+SF284:per:other_family [1232]
+SF583:per:age
+SF583:per:title [538]
+SF583:per:employee_of [528]
+SF283:per:age
+SF283:per:stateorprovince_of_death
+SF283:per:city_of_death
+SF283:per:cause_of_death
+SF283:per:cities_of_residence [1150]
+SF286:per:origin [1014695]
+SF286:per:stateorprovinces_of_residence [1689]
+SF286:per:title [1696, 1694, 1695]
+SF286:per:employee_of [1676]
+SF286:per:charges [1460]
+SF285:per:cities_of_residence [1095]
+SF285:per:employee_of [1096]
+SF285:per:spouse [1107]
+SF285:per:siblings [1106]
+SF285:per:other_family [1099]
+SF581:per:age
+SF581:per:stateorprovinces_of_residence [1191]
+SF581:per:title [211]
+SF287:per:spouse [1309]
+SF200:per:member_of [1776, 1777]
+SF279:per:alternate_names [1707]
+SF279:per:title [1716]
+SF579:per:cities_of_residence [840]
+SF579:per:title [854, 852]
+SF579:per:employee_of [845]
+SF578:per:countries_of_residence [914]
+SF578:per:title [1070, 1072]
+SF578:per:employee_of [920, 919]
+SF576:per:countries_of_residence [744]
+SF576:per:title [809]
+SF576:per:employee_of [1000080]
+SF575:per:title [1048, 1047]
+SF575:per:employee_of [679, 678]
+SF290:per:country_of_birth
+SF290:per:origin [2054, 2055]
+SF290:per:countries_of_residence [1935]
+SF290:per:title [2090]
+SF290:per:employee_of [1972]
+SF205:per:spouse [2124]
+SF291:per:origin [1699]
+SF291:per:countries_of_residence [1690]
+SF291:per:title [1703, 1708, 1706]
+SF208:per:alternate_names [1644]
+SF208:per:spouse [1653]
+SF208:per:children [1646]
+SF207:per:date_of_birth
+SF207:per:origin [1197]
+SF207:per:title [1198]
+SF207:per:employee_of [1196]
+SF202:per:age
+SF202:per:religion
+SF202:per:stateorprovinces_of_residence [1414]
+SF202:per:cities_of_residence [1409]
+SF202:per:title [1415, 1418, 1416]
+SF202:per:member_of [1411]
+SF202:per:employee_of [1410]
+SF202:per:children [1408]
+SF201:per:title [2024]
+SF204:per:age
+SF204:per:title [1721]
+SF204:per:spouse [1720]
+SF203:per:origin [1754]
+SF203:per:cities_of_residence [1751]
+SF203:per:title [1757, 1758, 1759]
+SF203:per:member_of [1752]
+SF203:per:employee_of [2139]
+SF299:per:title [1033, 1031]
+SF299:per:spouse [1028]
+SF296:per:title [1455]
+SF296:per:employee_of [1449]
+SF297:per:cities_of_residence [1391, 1392]
+SF294:per:stateorprovinces_of_residence [1365]
+SF294:per:employee_of [1363]
+SF550:per:title [256]
+SF209:org:alternate_names [1422]
+SF292:per:stateorprovinces_of_residence [1943]
+SF292:per:employee_of [1931]
+SF292:per:siblings [1942]
+SF552:per:employee_of [1000001]
+SF552:per:charges [416]
+SF293:per:country_of_birth
+SF293:per:origin [1119, 1120]
+SF293:per:countries_of_residence [1116]
+SF293:per:cities_of_residence [1115]
+SF293:per:parents [1124, 1125]
+SF293:per:siblings [1128, 1129]
+SF551:per:age
+SF551:per:origin [936]
+SF551:per:title [941, 942]
+SF551:per:employee_of [935]
+SF544:org:alternate_names [817]
+SF546:org:country_of_headquarters
+SF546:org:city_of_headquarters
+SF546:org:parents [794]
+SF548:org:city_of_headquarters
+SF548:org:alternate_names [814]
+SF548:org:parents [828]
+SF289:per:title [1923, 1922]
+SF289:per:employee_of [1910]
+SF289:per:other_family [1913]
+SF549:org:founded
+SF549:org:stateorprovince_of_headquarters
+SF549:org:founded_by [402]
+SF210:org:country_of_headquarters
+SF210:org:city_of_headquarters
+SF210:org:alternate_names [1295]
+SF210:org:top_members/employees [1436]
+SF210:org:parents [1348]
+SF211:per:age
+SF211:per:alternate_names [1898]
+SF211:per:origin [1902]
+SF211:per:stateorprovinces_of_residence [1908]
+SF211:per:cities_of_residence [1900]
+SF219:org:country_of_headquarters
+SF218:org:country_of_headquarters
+SF218:org:stateorprovince_of_headquarters
+SF218:org:city_of_headquarters
+SF218:org:top_members/employees [1026]
+SF216:org:top_members/employees [1862]
+SF215:org:country_of_headquarters
+SF215:org:top_members/employees [2133, 2132, 2134]
+SF215:org:founded_by [2131]
+SF214:org:subsidiaries [2025, 2028]
+SF213:org:country_of_headquarters
+SF213:org:stateorprovince_of_headquarters
+SF213:org:alternate_names [1531]
+SF213:org:top_members/employees [1550]
+SF212:per:stateorprovince_of_birth
+SF212:per:cities_of_residence [2118]
+SF212:per:title [2121, 2123]
+SF562:per:title [1138]
+SF562:per:employee_of [288, 286]
+SF561:per:title [81, 83]
+SF561:per:employee_of [1000067]
+SF560:per:title [1150, 1149, 1148, 1146, 1145, 47]
+SF560:per:member_of [642]
+SF560:per:employee_of [45]
+SF556:per:cities_of_residence [527]
+SF556:per:schools_attended [599]
+SF556:per:title [611, 614, 1000060]
+SF556:per:member_of [1000058]
+SF556:per:employee_of [1000057, 594]
+SF553:per:title [42]
+SF554:per:religion
+SF554:per:countries_of_residence [334, 333]
+SF554:per:title [686, 685]
+SF554:per:member_of [682]
+SF559:per:countries_of_residence [144]
+SF559:per:stateorprovinces_of_residence [196]
+SF559:per:employee_of [148]
+SF557:per:countries_of_residence [561]
+SF557:per:member_of [1000064]
+SF557:per:employee_of [577]
+SF558:per:countries_of_residence [1028]
+SF558:per:stateorprovinces_of_residence [1041]
+SF558:per:title [1043, 1042]
+SF558:per:member_of [1186, 1034]
+SF558:per:employee_of [1030]
+SF221:org:top_members/employees [2128, 2127]
+SF222:org:number_of_employees/members
+SF222:org:stateorprovince_of_headquarters
+SF222:org:city_of_headquarters
+SF222:org:top_members/employees [1957]
+SF222:org:founded_by [1948]
+SF222:org:shareholders [1953]
+SF223:org:country_of_headquarters
+SF223:org:city_of_headquarters
+SF223:org:alternate_names [1256]
+SF223:org:top_members/employees [1281]
+SF223:org:founded_by [1262]
+SF225:org:founded
+SF225:org:parents [1358]
+SF225:org:founded_by [1356]
+SF228:org:country_of_headquarters
+SF228:org:stateorprovince_of_headquarters
+SF228:org:city_of_headquarters
+SF228:org:website
+SF228:org:alternate_names [2075]
+SF227:org:alternate_names [1045]
+SF227:org:top_members/employees [1105]
+SF229:org:stateorprovince_of_headquarters
+SF229:org:city_of_headquarters
+SF229:org:top_members/employees [1836, 1837, 1839]
+SF229:org:parents [1809]
+SF530:org:stateorprovince_of_headquarters
+SF530:org:parents [178]
+SF524:org:city_of_headquarters
+SF524:org:member_of [565, 563]
+SF526:org:founded
+SF526:org:country_of_headquarters
+SF520:org:founded
+SF520:org:country_of_headquarters
+SF520:org:city_of_headquarters
+SF520:org:alternate_names [983]
+SF520:org:member_of [989]
+SF520:org:parents [994]
+SF520:org:founded_by [988]
+SF520:org:shareholders [1000017]
+SF521:org:country_of_headquarters
+SF521:org:stateorprovince_of_headquarters
+SF521:org:city_of_headquarters
+SF521:org:parents [506]
+SF522:org:country_of_headquarters
+SF522:org:alternate_names [216, 217, 218]
+SF230:org:stateorprovince_of_headquarters
+SF230:org:city_of_headquarters
+SF230:org:top_members/employees [1326, 1331, 1332]
+SF528:org:country_of_headquarters
+SF231:per:country_of_birth
+SF231:per:origin [1630]
+SF231:per:countries_of_residence [1605]
+SF231:per:title [1650]
+SF231:per:member_of [1625]
+SF231:per:employee_of [1616]
+SF232:org:top_members/employees [1824]
+SF232:org:parents [1821]
+SF237:org:top_members/employees [1743]
+SF237:org:founded_by [1687]
+SF236:org:stateorprovince_of_headquarters
+SF236:org:city_of_headquarters
+SF236:org:website
+SF236:org:alternate_names [1588]
+SF236:org:member_of [1617]
+SF236:org:subsidiaries [1636]
+SF235:org:stateorprovince_of_headquarters
+SF235:org:city_of_headquarters
+SF234:org:founded
+SF234:org:stateorprovince_of_headquarters
+SF234:org:city_of_headquarters
+SF234:org:website
+SF234:org:top_members/employees [1080]
+SF234:org:subsidiaries [1079]
+SF234:org:parents [1075]
+SF234:org:founded_by [1005181]
+SF541:org:alternate_names [243]
+SF541:org:subsidiaries [1102]
+SF540:org:city_of_headquarters
+SF540:org:member_of [340]
+SF537:org:stateorprovince_of_headquarters
+SF537:org:city_of_headquarters
+SF537:org:website
+SF537:org:top_members/employees [1000042]
+SF537:org:founded_by [1000041, 69]
+SF538:org:country_of_headquarters
+SF538:org:alternate_names [245]
+SF538:org:member_of [251]
+SF535:org:subsidiaries [7]
+SF536:org:founded
+SF536:org:members [725, 1000038, 726]
+SF536:org:member_of [724]
+SF536:org:parents [1000040]
+SF533:org:city_of_headquarters
+SF534:org:country_of_headquarters
+SF532:org:subsidiaries [172]
+SF240:org:founded
+SF240:org:stateorprovince_of_headquarters
+SF240:org:city_of_headquarters
+SF240:org:alternate_names [1247]
+SF240:org:top_members/employees [1266, 1267]
+SF240:org:founded_by [1251]
+SF539:org:parents [233]
+SF241:per:title [2044]
+SF242:org:country_of_headquarters
+SF242:org:alternate_names [1451]
+SF242:org:top_members/employees [1462]
+SF242:org:parents [1461]
