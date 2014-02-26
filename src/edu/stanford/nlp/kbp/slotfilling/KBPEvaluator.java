@@ -1496,7 +1496,19 @@ public class KBPEvaluator {
       outputFileName += ".combo";
     }
     PrintStream os = new PrintStream(outputFileName);
-    outputRelations(os, props, tester.getSlotsToNamedEntities(), relations, modelCombinationMode);
+    outputRelations(os, props, tester.getSlotsToNamedEntities(), relations, modelCombinationMode); 
+
+    // Ajay: Not working ... can remove this piece of code
+    ///////////////////////////////////////////////
+    /**
+     * Modification by Ajay : Putting sorted output relations in 'outputFileName'.
+	 *
+     */
+//    List<Pair<KBPEntity, KBPSlot>> sorted = convertToSorted(relations);
+//    Map<KBPEntity, Collection<KBPSlot>> allRels = keepTop(sorted, sorted.size()); 
+//    outputRelations(os, props, tester.getSlotsToNamedEntities(), allRels, false, 0);
+    ///////////////////////////////////////////////
+
     os.close();
     System.err.println("The output was also saved in file: " + outputFileName);
 
@@ -1518,6 +1530,7 @@ public class KBPEvaluator {
       if (keyFile != null) {
         System.out.println("Official KBP score:");
         Set<String> queryIds = extractQueryIds(relations.keySet());
+                
         if (!temporal) SFScore.score(System.out, outputFileName, keyFile, anydoc, allCandidates, queryIds);
 
         int threshold = (int) (100.0 * singleThreshold);
@@ -1614,7 +1627,7 @@ public class KBPEvaluator {
     List<Pair<KBPEntity, KBPSlot>> sorted = convertToSorted(relations);
     int START_OFFSET = 10;
 
-    for(int i = START_OFFSET; i < sorted.size(); i ++) {
+    for(int i = START_OFFSET; i <= sorted.size(); i ++) { // Ajay: To iterate till last relation instance extracted. ( '<' --> '<=' )
       Map<KBPEntity, Collection<KBPSlot>> filteredRels = keepTop(sorted, i);
       String outputFileName = dir + File.separator + runid + ".i" + i + ".output";
       PrintStream os = new PrintStream(outputFileName);

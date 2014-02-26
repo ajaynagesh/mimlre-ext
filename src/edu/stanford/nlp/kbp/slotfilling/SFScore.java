@@ -301,7 +301,12 @@ public class SFScore {
         for(String slotName: singleValuedSlots) {
           String key = qid + ":" + slotName;
           if(query_has_answer.get(key) != null) {
-            num_answers ++;
+        	  num_answers ++;
+        	  
+        	/// Ajay: Some debug code to list gold data
+//        	  List<String> responseList = response.get(key);
+//              String responseString = responseList.get(0);
+//              os.println("AjKEY:"+key+":*:"+responseString);
           }
         }
         // list-valued slots
@@ -311,6 +316,14 @@ public class SFScore {
           if (query_eclasses.get(key) != null)
             num_answers_to_query = query_eclasses.get(key).size();
           num_answers += num_answers_to_query;
+          
+          /// Ajay: Some debug code to list gold data
+//          if(num_answers_to_query > 0) {
+//          	List<String> responseList = response.get(key);
+//          	for(String res : responseList)
+//          		os.println("AjKEY:"+key+":*:"+res + " SZ: " + num_answers_to_query );
+//          }  
+
         }
       }
     }
@@ -351,8 +364,14 @@ public class SFScore {
 
     for (String query : svSlots) {
       // mihai: this computes a fake recall, only over slots actually answered
-      if (allQueryIds == null && query_has_answer.get(query) != null)
+      if (allQueryIds == null && query_has_answer.get(query) != null){
         num_answers++;
+        
+        /// Ajay: Some debug code to list gold data
+//        List<String> responseList = response.get(query);
+//        String responseString = responseList.get(0);
+//        os.println("AjKEY:"+query + ":*:"+responseString);
+      }
       List<String> responseList = response.get(query);
       if (responseList == null) {
         os.println ("No system response for slot " + query);
@@ -421,6 +440,14 @@ public class SFScore {
         if (query_eclasses.get(query) != null)
           num_answers_to_query = query_eclasses.get(query).size();
         num_answers += num_answers_to_query;
+        
+         /// Ajay: Some debug code to list gold data
+//        if(num_answers_to_query > 0) {
+//        	List<String> responseList = response.get(query);
+//        	for(String res : responseList)
+//        		os.print("AjKEY:"+query+":*:"+res + " SZ: " + num_answers_to_query );
+//        }
+        
       }
       List<String> responseList = response.get(query);
       if (responseList == null) {

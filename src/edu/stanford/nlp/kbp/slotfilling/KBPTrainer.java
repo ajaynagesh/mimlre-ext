@@ -603,7 +603,7 @@ public KBPTrainer(Properties props) throws Exception {
       // default: train followed by test
       // this is the former block enabled by Props.TRAINER
       train(props);
-      //if(EVALUATE_AFTER_TRAIN) evaluate(props);
+      if(EVALUATE_AFTER_TRAIN) evaluate(props);
     }
   }
 
